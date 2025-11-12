@@ -132,8 +132,6 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
         l1_cntrl.responseToL1Cache.slave = ruby_system.network.master
 
             # Jiyong, MLDOM: add extra channel from spec data from L1 to L0
-        l1_cntrl.bufferFromL1_specData = MessageBuffer()
-        l2_cntrl.bufferToL0_specData = l1_cntrl.bufferFromL1_specData
 
 
     l2_index_start = block_size_bits + l2_bits
