@@ -133,7 +133,7 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
 
             # Jiyong, MLDOM: add extra channel from spec data from L1 to L0
         l1_cntrl.bufferFromL1_specData = MessageBuffer()
-        # l1_cntrl.bufferFromL1_specData.master = ruby_system.network.slave
+        l1_cntrl.bufferFromL1_specData = ruby_system.network.slave
         
 
 
@@ -170,7 +170,8 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
         l2_cntrl.responseToL2Cache = MessageBuffer()
         l2_cntrl.responseToL2Cache.slave = ruby_system.network.master
 
-        l2_cntrl.bufferToL0_specData = l1_cntrl_nodes[0].bufferFromL1_specData
+        l2_cntrl.bufferToL0_specData = MessageBuffer()
+        l2_cntrl.bufferToL0_specData.slave = ruby_system.network.master
 
 
     # Run each of the ruby memory controllers at a ratio of the frequency of
