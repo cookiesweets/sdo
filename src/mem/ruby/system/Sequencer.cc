@@ -373,7 +373,7 @@ Sequencer::insertSpecldRequest(PacketPtr pkt, RubyRequestType request_type)
     // [SafeSpec] If store
     assert (request_type == RubyRequestType_SPEC_LD_L0 ||
             request_type == RubyRequestType_SPEC_LD_L1 ||
-            request_type == RubyRequestType_SPEC_LD_L2 ||
+            // request_type == RubyRequestType_SPEC_LD_L2 ||
             request_type == RubyRequestType_SPEC_LD_Mem ||
             request_type == RubyRequestType_SPEC_LD_Perfect ||
             request_type == RubyRequestType_SPEC_LD_PerfectUnsafe);
@@ -821,8 +821,8 @@ Sequencer::readCallbackObliv_fromL0(Addr address,
     else if (request->m_type == RubyRequestType_SPEC_LD_L1) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_L1 commands callback readCallback_fromL0 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
     }
-    else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
-        DPRINTFR(JY_Ruby, "%10s SPEC_LD_L2 commands callback readCallback_fromL0 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
+    // else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
+    //     DPRINTFR(JY_Ruby, "%10s SPEC_LD_L2 commands callback readCallback_fromL0 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
     } else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_Mem commands callback readCallback_fromL0 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
     }
@@ -896,8 +896,8 @@ Sequencer::readCallbackObliv_fromL1(Addr address,
         m_specldRequestTable.erase(i);
         markRemoved();
     }
-    else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
-        DPRINTFR(JY_Ruby, "%10s SPEC_LD_L2 commands callback readCallback_fromL1 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
+    // else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
+    //     DPRINTFR(JY_Ruby, "%10s SPEC_LD_L2 commands callback readCallback_fromL1 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
     } else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_Mem commands callback readCallback_fromL1 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
     }
@@ -1062,7 +1062,7 @@ Sequencer::hitCallback(SequencerRequest* srequest, DataBlock& data,
             (type == RubyRequestType_SPEC_LD) ||
             (type == RubyRequestType_SPEC_LD_L0) ||
             (type == RubyRequestType_SPEC_LD_L1) ||
-            (type == RubyRequestType_SPEC_LD_L2) ||
+            // (type == RubyRequestType_SPEC_LD_L2) ||
             (type == RubyRequestType_SPEC_LD_Mem) ||
             (type == RubyRequestType_SPEC_LD_Perfect) ||
             (type == RubyRequestType_SPEC_LD_PerfectUnsafe) ||
@@ -1548,8 +1548,8 @@ Sequencer::makeRequest(PacketPtr pkt)
                 primary_type = secondary_type = RubyRequestType_SPEC_LD_L0;
             else if (pkt->cmd == MemCmd::ReadSpecL1Req)
                 primary_type = secondary_type = RubyRequestType_SPEC_LD_L1;
-            else if (pkt->cmd == MemCmd::ReadSpecL2Req)
-                primary_type = secondary_type = RubyRequestType_SPEC_LD_L2;
+            // else if (pkt->cmd == MemCmd::ReadSpecL2Req)
+            //     primary_type = secondary_type = RubyRequestType_SPEC_LD_L2;
             else if (pkt->cmd == MemCmd::ReadSpecMemReq)
                 primary_type = secondary_type = RubyRequestType_SPEC_LD_Mem;
             else if (pkt->cmd == MemCmd::ReadSpecPerfectReq)
