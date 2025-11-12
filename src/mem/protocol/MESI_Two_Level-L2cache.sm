@@ -49,7 +49,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
     vnet_type="response";  // this L2 bank -> a local L1 || Memory
 
   // Jiyong, MLDOM: spec data channel from L1 to L0
-  MessageBuffer * bufferToL0_specData, network="To";
+  // MessageBuffer * bufferToL0_specData, network="To";
 
   // FROM the network to this local bank of L2 cache
   MessageBuffer * unblockToL2Cache, network="From", virtual_network="2",
@@ -372,7 +372,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
   out_port(L1RequestL2Network_out, RequestMsg, L1RequestFromL2Cache);
   out_port(DirRequestL2Network_out, RequestMsg, DirRequestFromL2Cache);
   out_port(responseL2Network_out, ResponseMsg, responseFromL2Cache);
-  out_port(bufferToL0_specData_out, ResponseMsg, bufferToL0_specData);
+  // out_port(responseL2Network_out, ResponseMsg, bufferToL0_specData);
 
 
   in_port(L1unblockNetwork_in, ResponseMsg, unblockToL2Cache, rank = 2) {
@@ -760,7 +760,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
   // Jiyong, MLDOM: SpecLD (L2 or Mem) hit L2, send the response up
   action(hj_spec_load_hit_l2, "h2", desc="Spec load LX hits L2. send data to the L1 requestor") {
     peek(L1RequestL2Network_in, RequestMsg) {
-      enqueue(bufferToL0_specData_out, ResponseMsg, l2_response_latency) {
+      enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
         out_msg.addr := address;
         out_msg.Type := CoherenceResponseType:DATA_SPEC_FROM_L1;
@@ -781,7 +781,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
   // Jiyong, MLDOM: SpecLD (L2 or Mem) miss L2, send the dummy response up
   action(mj_spec_load_miss_l2, "m2", desc="Spec load LX misses L2. send miss to the L1 requestor") {
     peek(L1RequestL2Network_in, RequestMsg) {
-      enqueue(bufferToL0_specData_out, ResponseMsg, l2_response_latency) {
+      enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         out_msg.addr := address;
         out_msg.Type := CoherenceResponseType:DATA_SPEC_FROM_L1;
         out_msg.Sender := machineID;
@@ -868,7 +868,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
   // Jiyong, MLDOM:  send the spec data from Mem up
   action(mj_sendDataToGetSpecRequestor, "dfm", desc="send data from cache to GetSpec ID") {
     peek(responseL2Network_in, ResponseMsg) {
-      enqueue(bufferToL0_specData_out, ResponseMsg, to_l1_latency) {
+      enqueue(responseL2Network_out, ResponseMsg, to_l1_latency) {
         out_msg.addr := address;
         out_msg.Type := CoherenceResponseType:DATA_SPEC_FROM_MEM;
         out_msg.Sender := machineID;
