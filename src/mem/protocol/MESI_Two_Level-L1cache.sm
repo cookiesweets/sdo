@@ -996,9 +996,11 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   action(h_spec_load_hit, "hs",
          desc="Notify sequencer the spec load completed.")
   {
-    assert(is_valid(cache_entry));
-    DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
-    sequencer.readCallbackObliv_fromL0(address, true, cache_entry.DataBlk, in_msg.idx);
+    peek(mandatoryQueue_in, RubyRequest) {
+      assert(is_valid(cache_entry));
+      DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
+      sequencer.readCallbackObliv_fromL0(address, true, cache_entry.DataBlk, in_msg.idx);
+    }
   }
 
   action(h_ifetch_hit, "hi", desc="Notify sequencer the instruction fetch completed.")
@@ -1176,7 +1178,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       }
     }
   }
-  
+
   action(po_observeMiss, "\po", desc="Inform the prefetcher about the miss") {
       peek(mandatoryQueue_in, RubyRequest) {
           if (enable_prefetch) {
