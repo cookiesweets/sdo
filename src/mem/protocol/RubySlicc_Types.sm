@@ -102,7 +102,8 @@ structure (NetDest, external = "yes", non_obj="yes") {
 structure (Sequencer, external = "yes") {
   void readCallback(Addr, DataBlock);
   void readCallback(Addr, DataBlock, bool, bool);
-  void readCallback(Addr, DataBlock, bool, bool, bool, bool, bool);
+  void readCallback(Addr, DataBlock, bool, bool, bool, bool);
+  // void readCallback(Addr, DataBlock, bool, bool, bool, bool, bool);
   void readCallback(Addr, DataBlock, bool, bool, bool, bool, bool, MachineType);
   void readCallback(Addr, DataBlock, bool, bool, bool, bool, bool, MachineType, Cycles, Cycles, Cycles);
 
