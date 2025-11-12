@@ -577,7 +577,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   // Jiyong, MLDOM: spec data will arrive at this port
-  in_port(messgeBuffer_specData_in, RequestMsg, bufferFromL1_specData, rank = 2) {
+  in_port(messgeBuffer_specData_in, RequestMsg, bufferFromL0_specData, rank = 2) {
     if (messgeBuffer_specData_in.isReady(clockEdge())) {
       peek(messgeBuffer_specData_in, RequestMsg, block_on="addr") {
         assert(in_msg.Dest == machineID);
