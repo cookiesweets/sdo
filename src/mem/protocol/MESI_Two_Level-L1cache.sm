@@ -1152,22 +1152,22 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   // Jiyong, MLDOM: send the spec data from L1 up to the core
-  // action(hxj_send_spec_data_from_l1_to_cpu, "df1", desc="Send spec data from L1 up to the core. Notify sequencer the load returns.") {
-  //   peek(messgeBuffer_specData_in, RequestMsg) {
-  //     DPRINTF(JY_Ruby, "send the spec data from L1 upto the core: address: %#x, idx: %d ; call readCallback_fromL1\n", address, in_msg.idx);
-  //     DataBlock dataBlk_L1  := in_msg.DataBlk_L1;
-  //     sequencer.readCallbackObliv_fromL1(address, in_msg.hitAtL1, dataBlk_L1, in_msg.idx);
-  //   }
-  // }
+  action(hxj_send_spec_data_from_l1_to_cpu, "df1", desc="Send spec data from L1 up to the core. Notify sequencer the load returns.") {
+    peek(responseL1Network_in, ResponseMsg) {
+      DPRINTF(JY_Ruby, "send the spec data from L1 upto the core: address: %#x, idx: %d ; call readCallback_fromL1\n", address, in_msg.idx);
+      DataBlock dataBlk_L1  := in_msg.DataBlk_L1;
+      sequencer.readCallbackObliv_fromL1(address, in_msg.hitAtL1, dataBlk_L1, in_msg.idx);
+    }
+  }
 
-  // // Jiyong, MLDOM: send the spec data from Mem up to the core
-  // action(hxj_send_spec_data_from_mem_to_cpu, "dfm", desc="Send spec data from Mem up to the core. Notify sequencer the load returns.") {
-  //   peek(messgeBuffer_specData_in, RequestMsg) {
-  //     DPRINTF(JY_Ruby, "send the spec data from Mem upto the core: address: %#x, idx: %d ; call readCallback_fromMem\n", address, in_msg.idx);
-  //     DataBlock dataBlk_Mem  := in_msg.DataBlk_Mem;
-  //     sequencer.readCallbackObliv_fromMem(address, in_msg.hitAtMem, dataBlk_Mem, in_msg.idx);
-  //   }
-  // }
+  // Jiyong, MLDOM: send the spec data from Mem up to the core
+  action(hxj_send_spec_data_from_mem_to_cpu, "dfm", desc="Send spec data from Mem up to the core. Notify sequencer the load returns.") {
+    peek(responseL1Network_in, ResponseMsg) {
+      DPRINTF(JY_Ruby, "send the spec data from Mem upto the core: address: %#x, idx: %d ; call readCallback_fromMem\n", address, in_msg.idx);
+      DataBlock dataBlk_Mem  := in_msg.DataBlk_Mem;
+      sequencer.readCallbackObliv_fromMem(address, in_msg.hitAtMem, dataBlk_Mem, in_msg.idx);
+    }
+  }
 
   action(h_ifetch_hit, "hi", desc="Notify sequencer the instruction fetch completed.")
   {
@@ -1402,6 +1402,16 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     // send a request to L1
     ij_issueGETSPEC_Mem_pass_L0;
     k_popMandatoryQueue;
+  }
+
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM, S, E, M}, {Data_Spec_fromL1}) {
+    hxj_send_spec_data_from_l1_to_cpu;
+    o_popIncomingResponseQueue;
+  }
+
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM, S, E, M}, {Data_Spec_fromMem}) {
+    hxj_send_spec_data_from_mem_to_cpu;
+    o_popIncomingResponseQueue;
   }
 
   // SpecLD_Perfect Hit in L0, return hit and done
