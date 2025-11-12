@@ -372,6 +372,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
   out_port(L1RequestL2Network_out, RequestMsg, L1RequestFromL2Cache);
   out_port(DirRequestL2Network_out, RequestMsg, DirRequestFromL2Cache);
   out_port(responseL2Network_out, ResponseMsg, responseFromL2Cache);
+  out_port(bufferToL0_specData_out, CoherenceMsg, bufferToL0_specData);
 
 
   in_port(L1unblockNetwork_in, ResponseMsg, unblockToL2Cache, rank = 2) {
