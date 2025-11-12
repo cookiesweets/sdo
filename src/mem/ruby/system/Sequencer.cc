@@ -899,7 +899,8 @@ Sequencer::readCallbackObliv_fromL1(Addr address,
     }
     // else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
     //     DPRINTFR(JY_Ruby, "%10s SPEC_LD_L2 commands callback readCallback_fromL1 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-    } else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
+    // }
+    else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_Mem commands callback readCallback_fromL1 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
     }
     else if (request->m_type == RubyRequestType_SPEC_LD_Perfect) {
