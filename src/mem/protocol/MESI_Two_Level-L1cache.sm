@@ -297,7 +297,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     } else if (type == RubyRequestType:SPEC_LD_PerfectUnsafe) {
       return Event:SpecLoad_PerfectUnsafe;
     } else {
-      error("
+      error("Invalid RubyRequestType");
   }
 
   Event prefetch_request_type_to_event(RubyRequestType type) {
