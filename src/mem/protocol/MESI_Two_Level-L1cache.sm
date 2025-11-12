@@ -43,14 +43,14 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
    // Message Queues
    // From this node's L1 cache TO the network
 
-   // From the L1 cache to the L0 cache
-   MessageBuffer * bufferToL0, network="To";
+   // From this node's L0 cache to the network
+   MessageBuffer * bufferToL1, network="To";
+
+   // To this node's L0 cache FROM the network
+   MessageBuffer * bufferFromL1, network="From";
 
    // Jiyong, MLDOM: spec data channel from L1 to L0
-   MessageBuffer * bufferToL0_specData, network="To";
-
-   // From the L0 cache to the L1 cache
-   MessageBuffer * bufferFromL0, network="From";
+   MessageBuffer * bufferFromL1_specData, network="From";
 
    // a local L1 -> this L2 bank, currently ordered with directory forwarded requests
    MessageBuffer * requestFromL1Cache, network="To", virtual_network="0",
@@ -577,7 +577,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   // Jiyong, MLDOM: spec data will arrive at this port
-  in_port(messgeBuffer_specData_in, RequestMsg, bufferFromL0_specData, rank = 2) {
+  in_port(messgeBuffer_specData_in, RequestMsg, bufferFromL1_specData, rank = 2) {
     if (messgeBuffer_specData_in.isReady(clockEdge())) {
       peek(messgeBuffer_specData_in, RequestMsg, block_on="addr") {
         assert(in_msg.Dest == machineID);
