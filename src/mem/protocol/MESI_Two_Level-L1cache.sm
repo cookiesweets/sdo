@@ -1068,7 +1068,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   // Jiyong, MLDOM: send the spec data from L1 up to the core
   action(hxj_send_spec_data_from_l1_to_cpu, "df1", desc="Send spec data from L1 up to the core. Notify sequencer the load returns.") {
-    peek(messgeBuffer_specData_in, CoherenceMsg) {
+    peek(messgeBuffer_specData_in, RequestMsg) {
       DPRINTF(JY_Ruby, "send the spec data from L1 upto the core: address: %#x, idx: %d ; call readCallback_fromL1\n", address, in_msg.idx);
       DataBlock dataBlk_L1  := in_msg.DataBlk_L1;
       sequencer.readCallbackObliv_fromL1(address, in_msg.hitAtL1, dataBlk_L1, in_msg.idx);
@@ -1077,7 +1077,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   // Jiyong, MLDOM: send the spec data from Mem up to the core
   action(hxj_send_spec_data_from_mem_to_cpu, "dfm", desc="Send spec data from Mem up to the core. Notify sequencer the load returns.") {
-    peek(messgeBuffer_specData_in, CoherenceMsg) {
+    peek(messgeBuffer_specData_in, RequestMsg) {
       DPRINTF(JY_Ruby, "send the spec data from Mem upto the core: address: %#x, idx: %d ; call readCallback_fromMem\n", address, in_msg.idx);
       DataBlock dataBlk_Mem  := in_msg.DataBlk_Mem;
       sequencer.readCallbackObliv_fromMem(address, in_msg.hitAtMem, dataBlk_Mem, in_msg.idx);
