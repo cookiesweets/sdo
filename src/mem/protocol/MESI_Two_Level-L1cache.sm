@@ -43,11 +43,11 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
    // Message Queues
    // From this node's L1 cache TO the network
 
-   // From this node's L0 cache to the network
-   MessageBuffer * bufferToL1, network="To";
+  //  // From this node's L0 cache to the network
+  //  MessageBuffer * bufferToL1, network="To";
 
-   // To this node's L0 cache FROM the network
-   MessageBuffer * bufferFromL1, network="From";
+  //  // To this node's L0 cache FROM the network
+  //  MessageBuffer * bufferFromL1, network="From";
 
    // Jiyong, MLDOM: spec data channel from L1 to L0
    MessageBuffer * bufferFromL1_specData, network="From";
