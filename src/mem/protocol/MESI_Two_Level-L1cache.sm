@@ -1396,7 +1396,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   // SpecLD_Perfect Hit in L0, return hit and done
   transition({S,E,M}, SpecLoad_Perfect) {
     // return data immediately
-    hj_spec_load_hit_l0;
+    h_spec_load_hit;
     k_popMandatoryQueue;
   }
 
@@ -1552,7 +1552,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   transition({S,E,M}, SpecLoad_Mem) {
     // return the data immediately
-    hj_spec_load_hit_l0;
+    h_spec_load_hit;
     // send a request to L1(L2+Mem)
     ij_issueGETSPEC_Mem_pass_L0;
     k_popMandatoryQueue;
