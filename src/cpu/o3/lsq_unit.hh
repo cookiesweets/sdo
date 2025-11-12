@@ -1009,21 +1009,21 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
                 DPRINTF(JY, "ld_inst [sn:%lli], idx=%d wants to send a spec ld to L1 (pred_level = %d(L2))\n", load_inst->seqNum, load_idx, load_inst->pred_level);
                 data_pkt = Packet::createReadSpecL1(req);
                 break;
-              case Cache_L3: // predict L2
-                if (cpu->delay_on_LLC_pred) {
-                    // stall this spec request
-                    delete req;
-                    if (TheISA::HasUnalignedMemAcc && sreqLow) {
-                        delete sreqLow;
-                        delete sreqHigh;
-                    }
-                    load_inst->onlyWaitForExpose(true);
-                    iewStage->deferMemInst(load_inst);
-                    return NoFault;
-                }
-                DPRINTF(JY, "ld_inst [sn:%lli], idx=%d wants to send a spec ld to L2 (pred_level = %d(L3))\n", load_inst->seqNum, load_idx, load_inst->pred_level);
-                data_pkt = Packet::createReadSpecL2(req);
-                break;
+            //   case Cache_L3: // predict L2
+            //     if (cpu->delay_on_LLC_pred) {
+            //         // stall this spec request
+            //         delete req;
+            //         if (TheISA::HasUnalignedMemAcc && sreqLow) {
+            //             delete sreqLow;
+            //             delete sreqHigh;
+            //         }
+            //         load_inst->onlyWaitForExpose(true);
+            //         iewStage->deferMemInst(load_inst);
+            //         return NoFault;
+            //     }
+            //     DPRINTF(JY, "ld_inst [sn:%lli], idx=%d wants to send a spec ld to L2 (pred_level = %d(L3))\n", load_inst->seqNum, load_idx, load_inst->pred_level);
+            //     data_pkt = Packet::createReadSpecL2(req);
+            //     break;
               case DRAM: // predict Mem
                 if (cpu->delay_on_DRAM_pred) {
                     // stall this spec request
@@ -1144,10 +1144,10 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
                         fst_data_pkt = Packet::createReadSpecL1(sreqLow);
                         snd_data_pkt = Packet::createReadSpecL1(sreqHigh);
                         break;
-                    case Cache_L3: // predict L2
-                        fst_data_pkt = Packet::createReadSpecL2(sreqLow);
-                        snd_data_pkt = Packet::createReadSpecL2(sreqHigh);
-                        break;
+                    // case Cache_L3: // predict L2
+                    //     fst_data_pkt = Packet::createReadSpecL2(sreqLow);
+                    //     snd_data_pkt = Packet::createReadSpecL2(sreqHigh);
+                    //     break;
                     case DRAM: // predict Mem
                         fst_data_pkt = Packet::createReadSpecMem(sreqLow);
                         snd_data_pkt = Packet::createReadSpecMem(sreqHigh);
