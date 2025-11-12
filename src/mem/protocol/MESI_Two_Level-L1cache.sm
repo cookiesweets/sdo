@@ -667,6 +667,43 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     } // peek
   }
 
+  // Jiyong, MLDOM: SpecLoad_Mem hit/miss must send request to lower levels
+  action(ij_issueGETSPEC_Mem_pass_L0, 'mp0', desc="Issue SpecLoad Mem to lower levels given it hits/misses L0") {
+    peek(mandatoryQueue_in, RubyRequest) {
+      enqueue(requestNetwork_out, CoherenceMsg, request_latency) {
+        out_msg.addr := address;
+        out_msg.Type := CoherenceClass:GETSPEC_Mem;
+        out_msg.Requestor := machineID;
+        out_msg.Destination.add(mapAddressToRange(address, MachineType:L2Cache,
+                          l2_select_low_bit, l2_select_num_bits, intToID(0)));
+        DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
+                address, out_msg.Destination);
+        out_msg.MessageSize := MessageSizeType:SPECLD_Mem_Control;
+        out_msg.AccessMode := in_msg.AccessMode;
+        out_msg.idx := in_msg.idx;
+        out_msg.Prefetch := in_msg.Prefetch;
+      } // enqueue
+    } // peek
+  }
+  // Jiyong, MLDOM: SpecLoad_Perfect miss must send request to lower levels
+  action(ij_issueGETSPEC_Perfect_pass_L0, 'pp0', desc="Issue SpecLoad Perfect to lower levels given it misses L0") {
+    peek(mandatoryQueue_in, RubyRequest) {
+      enqueue(requestNetwork_out, CoherenceMsg, request_latency) {
+        out_msg.addr := address;
+        out_msg.Type := CoherenceClass:GETSPEC_Perfect;
+        out_msg.Requestor := machineID;
+        out_msg.Destination.add(mapAddressToRange(address, MachineType:L2Cache,
+                          l2_select_low_bit, l2_select_num_bits, intToID(0)));
+        DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
+                address, out_msg.Destination);
+        out_msg.MessageSize := MessageSizeType:SPECLD_Perfect_Control;
+        out_msg.AccessMode := in_msg.AccessMode;
+        out_msg.idx := in_msg.idx;
+        out_msg.Prefetch := in_msg.Prefetch;
+      } // enqueue
+    } // peek
+  }
+
   action(ex_issueEXPOSE, "ex", desc="Issue EXPOSE") {
     peek(mandatoryQueue_in, RubyRequest) {
       enqueue(requestL1Network_out, RequestMsg, l1_request_latency) {
