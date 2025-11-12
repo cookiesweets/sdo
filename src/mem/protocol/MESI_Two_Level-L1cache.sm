@@ -43,6 +43,15 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
    // Message Queues
    // From this node's L1 cache TO the network
 
+   // From the L1 cache to the L0 cache
+   MessageBuffer * bufferToL0, network="To";
+
+   // Jiyong, MLDOM: spec data channel from L1 to L0
+   MessageBuffer * bufferToL0_specData, network="To";
+
+   // From the L0 cache to the L1 cache
+   MessageBuffer * bufferFromL0, network="From";
+
    // a local L1 -> this L2 bank, currently ordered with directory forwarded requests
    MessageBuffer * requestFromL1Cache, network="To", virtual_network="0",
         vnet_type="request";
