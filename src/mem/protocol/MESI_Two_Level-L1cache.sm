@@ -137,6 +137,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     Data_Exclusive,       desc="Data for processor";
     DataS_fromL1,       desc="data for GETS request, need to unblock directory";
     Data_all_Acks,       desc="Data for processor, all acks";
+    // Jiyong, MLDOM
+    Data_Spec_fromL1,   desc="Spec data for processor sent from L1";
+    Data_Spec_fromL2,   desc="Spec data for processor sent from L2";
+    Data_Spec_fromMem,  desc="Spec data for processor sent from Mem";
 
     Ack,        desc="Ack for processor";
     Ack_all,      desc="Last ack for processor";
