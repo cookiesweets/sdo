@@ -106,6 +106,12 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     SpecLoad,        desc="SpecLoad request from the home processor";
     Expose,          desc="Expose request from the home processor";
 
+    SpecLoad_L0,            desc="Specload request from home processor, all the way till L1";
+    SpecLoad_L1,            desc="Specload request from home processor, all the way till L2";
+    SpecLoad_Mem,           desc="Specload request from home processor, all the way till Memory";
+    SpecLoad_Perfect,       desc="Specload request from home processor, perfectly hit the location";
+    SpecLoad_PerfectUnsafe, desc="Specload request from home processor, perfectly hit the location(unsafe version)";
+
     Inv,           desc="Invalidate request from L2 bank";
 
     // internal generated request
@@ -280,9 +286,18 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       return Event:SpecLoad;
     } else if (type == RubyRequestType:EXPOSE) {
       return Event:Expose;
+    } else if (type == RubyRequestType:SPEC_LD_L0) {
+      return Event:SpecLoad_L0;
+    } else if (type == RubyRequestType:SPEC_LD_L1) {
+      return Event:SpecLoad_L1;
+    } else if (type == RubyRequestType:SPEC_LD_Mem) {
+      return Event:SpecLoad_Mem;
+    } else if (type == RubyRequestType:SPEC_LD_Perfect) {
+      return Event:SpecLoad_Perfect;
+    } else if (type == RubyRequestType:SPEC_LD_PerfectUnsafe) {
+      return Event:SpecLoad_PerfectUnsafe;
     } else {
-      error("Invalid RubyRequestType");
-    }
+      error("
   }
 
   Event prefetch_request_type_to_event(RubyRequestType type) {
@@ -466,8 +481,27 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       peek(mandatoryQueue_in, RubyRequest, block_on="LineAddress") {
 
         // Check for data access to blocks in I-cache and ifetchs to blocks in D-cache
-
-        if (in_msg.Type == RubyRequestType:IFETCH) {
+        if (in_msg.Type == RubyRequestType:SPEC_LD_L0) {
+          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          trigger(Event:SpecLoad_L0, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
+        }
+        else if (in_msg.Type == RubyRequestType:SPEC_LD_L1) {
+          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          trigger(Event:SpecLoad_L1, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
+        }
+        else if (in_msg.Type == RubyRequestType:SPEC_LD_Mem) {
+          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          trigger(Event:SpecLoad_Mem, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
+        }
+        else if (in_msg.Type == RubyRequestType:SPEC_LD_Perfect) {
+          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          trigger(Event:SpecLoad_Perfect, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
+        }
+        else if (in_msg.Type == RubyRequestType:SPEC_LD_PerfectUnsafe) {
+          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          trigger(Event:SpecLoad_PerfectUnsafe, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
+        }
+        else if (in_msg.Type == RubyRequestType:IFETCH) {
           // ** INSTRUCTION ACCESS ***
 
           Entry L1Icache_entry := getL1ICacheEntry(in_msg.LineAddress);
@@ -575,6 +609,24 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
         out_msg.idx := in_msg.idx;
       }
     }
+  }
+
+  action(ij_issueGETSPEC_L1_pass_L0, '1p0', desc="Issue SpecLoad L1 to lower levels given it hits/misses L0") {
+    peek(mandatoryQueue_in, RubyRequest) {
+      enqueue(requestNetwork_out, RequestMsg, request_latency) {
+        out_msg.addr := address;
+        out_msg.Type := CoherenceRequestType:GETSPEC_L2;
+        out_msg.Requester := machineID;
+        out_msg.Destination.add(mapAddressToRange(address, MachineType:L2Cache,
+                          l2_select_low_bit, l2_select_num_bits, intToID(0)));
+        DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
+                address, out_msg.Destination);
+        out_msg.MessageSize := MessageSizeType:SPECLD_Control;
+        out_msg.Prefetch := in_msg.Prefetch;
+        out_msg.AccessMode := in_msg.AccessMode;
+        out_msg.idx := in_msg.idx;
+      } // enqueue
+    } // peek
   }
 
   action(ex_issueEXPOSE, "ex", desc="Issue EXPOSE") {
@@ -1006,6 +1058,31 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     }
   }
 
+  action(mj_spec_load_miss_l0, "m0", desc="Spec load LX misses L0. Notify sequencer the load returns.") {
+    peek(mandatoryQueue_in, RubyRequest) {
+      DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=0) misss L0: address: %#x, idx: %d; call readCallback_fromL0\n", address, in_msg.idx);
+      sequencer.readCallbackObliv_fromL0(address, false, cache_entry.DataBlk, in_msg.idx);
+    }
+  }
+
+  // Jiyong, MLDOM: send the spec data from L1 up to the core
+  action(hxj_send_spec_data_from_l1_to_cpu, "df1", desc="Send spec data from L1 up to the core. Notify sequencer the load returns.") {
+    peek(messgeBuffer_specData_in, CoherenceMsg) {
+      DPRINTF(JY_Ruby, "send the spec data from L1 upto the core: address: %#x, idx: %d ; call readCallback_fromL1\n", address, in_msg.idx);
+      DataBlock dataBlk_L1  := in_msg.DataBlk_L1;
+      sequencer.readCallbackObliv_fromL1(address, in_msg.hitAtL1, dataBlk_L1, in_msg.idx);
+    }
+  }
+
+  // Jiyong, MLDOM: send the spec data from Mem up to the core
+  action(hxj_send_spec_data_from_mem_to_cpu, "dfm", desc="Send spec data from Mem up to the core. Notify sequencer the load returns.") {
+    peek(messgeBuffer_specData_in, CoherenceMsg) {
+      DPRINTF(JY_Ruby, "send the spec data from Mem upto the core: address: %#x, idx: %d ; call readCallback_fromMem\n", address, in_msg.idx);
+      DataBlock dataBlk_Mem  := in_msg.DataBlk_Mem;
+      sequencer.readCallbackObliv_fromMem(address, in_msg.hitAtMem, dataBlk_Mem, in_msg.idx);
+    }
+  }
+
   action(h_ifetch_hit, "hi", desc="Notify sequencer the instruction fetch completed.")
   {
     assert(is_valid(cache_entry));
@@ -1218,15 +1295,48 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   //*****************************************************
 
   // Transitions for Load/Store/Replacement/WriteBack from transient states
-  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK}, {Load, Expose, SpecLoad, Ifetch, Store, L1_Replacement}) {
+  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK}, {Load, Expose, SpecLoad_L0, Ifetch, Store, L1_Replacement}) {
     z_stallAndWaitMandatoryQueue;
+  }
+
+  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_L0}) {
+    mj_spec_load_miss_l0;
+    k_popMandatoryQueue;
+  }
+
+  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_L1}) {
+    mj_spec_load_miss_l0;
+    // send a request to L1
+    ij_issueGETSPEC_L1_pass_L0;
+    k_popMandatoryQueue;
+  }
+
+  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_Mem}) {
+    mj_spec_load_miss_l0;
+    // send a request to L1
+    ij_issueGETSPEC_Mem_pass_L0;
+    k_popMandatoryQueue;
+  }
+
+  // SpecLD_Perfect Hit in L0, return hit and done
+  transition({S,E,M}, SpecLoad_Perfect) {
+    // return data immediately
+    hj_spec_load_hit_l0;
+    k_popMandatoryQueue;
+  }
+
+  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_Perfect}) {
+    mj_spec_load_miss_l0;
+    // send a request to L1
+    ij_issueGETSPEC_Perfect_pass_L0;
+    k_popMandatoryQueue;
   }
 
   transition({PF_IS, PF_IS_I}, {Store, L1_Replacement}) {
     z_stallAndWaitMandatoryQueue;
   }
 
-  transition({PF_IM, PF_SM}, {Load, Expose, SpecLoad, Ifetch, L1_Replacement}) {
+  transition({PF_IM, PF_SM}, {Load, Expose, Ifetch, L1_Replacement}) {
     z_stallAndWaitMandatoryQueue;
   }
 
@@ -1258,7 +1368,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     k_popMandatoryQueue;
   }
 
-  transition({NP,I}, SpecLoad, IX) {
+  transition({NP,I}, SpecLoad_L0, IX) {
     iw_allocateTBEWithoutCacheEntry;
     as_issueGETSPEC;
     k_popMandatoryQueue;
@@ -1283,7 +1393,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     k_popMandatoryQueue;
   }
 
-  transition({PF_IS, PF_IS_I}, SpecLoad) {
+  transition({PF_IS, PF_IS_I}, SpecLoad_L0) {
     k_popMandatoryQueue;
   }
 
@@ -1351,10 +1461,28 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     k_popMandatoryQueue;
   }
 
-  transition({S,E,M}, SpecLoad) {
+  transition({S,E,M}, SpecLoad_L0) {
     h_spec_load_hit;
     k_popMandatoryQueue;
   }
+
+  // SpecLD_L1 Hit in L0, return hit and issue request to L1
+  transition({S,E,M}, SpecLoad_L1) {
+    // return the data immediately
+    h_spec_load_hit;
+    // send a request to L1
+    ij_issueGETSPEC_L1_pass_L0;
+    k_popMandatoryQueue;
+  }
+
+  transition({S,E,M}, SpecLoad_Mem) {
+    // return the data immediately
+    hj_spec_load_hit_l0;
+    // send a request to L1(L2+Mem)
+    ij_issueGETSPEC_Mem_pass_L0;
+    k_popMandatoryQueue;
+  }
+
 
   transition({S,E,M}, Ifetch) {
     h_ifetch_hit;
