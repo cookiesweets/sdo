@@ -1656,7 +1656,7 @@ Sequencer::makeRequest(PacketPtr pkt)
 
     RequestStatus status;
     if (RubySystem::getMLDOMEnabled()) {
-        if (pkt->isSpecL0() || pkt->isSpecL1() || pkt->isSpecL2() || pkt->isSpecMem() || pkt->isSpecPerfect() || pkt->isSpecPerfectUnsafe()) {
+        if (pkt->isSpecL0() || pkt->isSpecL1() || pkt->isSpecMem() || pkt->isSpecPerfect() || pkt->isSpecPerfectUnsafe()) {
             DPRINTF(JY_Ruby, "try inserting specld pkt [sn:%lli] to specldRequestTable\n", pkt->seqNum);
             status = insertSpecldRequest(pkt, primary_type);
         }
@@ -1693,9 +1693,6 @@ Sequencer::makeRequest(PacketPtr pkt)
 
     if (pkt->isSpecL1())
         DPRINTFR(JY_Ruby, "%10s Issuing SPEC_LD_L1 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-
-    if (pkt->isSpecL2())
-        DPRINTFR(JY_Ruby, "%10s Issuing SPEC_LD_L2 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
 
     if (pkt->isSpecMem())
         DPRINTFR(JY_Ruby, "%10s Issuing SPEC_LD_Mem (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
