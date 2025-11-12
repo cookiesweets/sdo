@@ -580,7 +580,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   in_port(messgeBuffer_specData_in, RequestMsg, bufferFromL1_specData, rank = 2) {
     if (messgeBuffer_specData_in.isReady(clockEdge())) {
       peek(messgeBuffer_specData_in, RequestMsg, block_on="addr") {
-        assert(in_msg.Dest == machineID);
+        assert(in_msg.Destination.isElement(machineID));
 
         Entry cache_entry := getCacheEntry(in_msg.addr);
         TBE tbe := TBEs[in_msg.addr];
