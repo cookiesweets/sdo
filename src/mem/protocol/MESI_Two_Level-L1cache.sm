@@ -452,6 +452,16 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
           }
         } else if (in_msg.Type == CoherenceResponseType:WB_ACK) {
           trigger(Event:WB_Ack, in_msg.addr, cache_entry, tbe);
+        } else if (in_msg.Type == CoherenceResponseType:INV) {
+          trigger(Event:Inv, in_msg.addr, cache_entry, tbe);
+        } else if (in_msg.Type == CoherenceResponseType:GETX ||
+                   in_msg.Type == CoherenceResponseType:UPGRADE) {
+          // upgrade transforms to GETX due to race
+          trigger(Event:Fwd_GETX, in_msg.addr, cache_entry, tbe);
+        } else if (in_msg.Type == CoherenceResponseType:GETS) {
+          trigger(Event:Fwd_GETS, in_msg.addr, cache_entry, tbe);
+        } else if (in_msg.Type == CoherenceResponseType:GET_INSTR) {
+          trigger(Event:Fwd_GET_INSTR, in_msg.addr, cache_entry, tbe);
         } else {
           error("Invalid L1 response type");
         }
