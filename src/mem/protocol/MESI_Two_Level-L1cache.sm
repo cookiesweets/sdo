@@ -141,6 +141,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     DataBlock DataBlk,       desc="data for the block";
     bool Dirty, default="false",   desc="data is dirty";
     bool isPrefetch, desc="Set if this block was prefetched";
+    bool hitAtL0,  default="false", desc="if the spec load was a L0 hit";  // Jiyong MLDOM
+    bool hitAtL1,  default="false", desc="if the spec load was a L1 hit";  // Jiyong MLDOM
+    bool hitAtMem, default="false", desc="if the spec load was a Mem hit"; // Jiyong MLDOM
   }
 
   // TBE fields
