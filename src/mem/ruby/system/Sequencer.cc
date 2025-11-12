@@ -1352,9 +1352,9 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
     }
 
     DPRINTF(JY_Ruby, "hitCallbackObliv: pkt_to_send(sn=%lli) froLevel=%d, finalPkt=%d, mhas HitL0 = %d, HitL1 = %d, HitMem = %d\n",
-            pkt_to_send->seqNum, pkt_to_send->fromLevel, pkt_to_send->isFinalPacket, pkt_to_send->isL0_Hit(), pkt_to_send->isL1_Hit(), pkt_to_send->isL2_Hit(), pkt_to_send->isMem_Hit());
+            pkt_to_send->seqNum, pkt_to_send->fromLevel, pkt_to_send->isFinalPacket, pkt_to_send->isL0_Hit(), pkt_to_send->isL1_Hit(), pkt_to_send->isMem_Hit());
     DPRINTF(JY_Ruby, "hitCallbackObliv: main pkt(sn=%lli) has HitL0 = %d, HitL1 = %d, HitMem = %d\n",
-            pkt->seqNum, pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isL2_Hit(), pkt->isMem_Hit());
+            pkt->seqNum, pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isMem_Hit());
 
     // sanity check
     assert(pkt->isSpec());
