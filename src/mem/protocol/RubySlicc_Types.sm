@@ -119,7 +119,7 @@ structure (Sequencer, external = "yes") {
 
   void writeCallback(Addr, DataBlock);
   void writeCallback(Addr, DataBlock, bool, bool);
-  void writeCallback(Addr, DataBlock, bool, bool, bool, bool, bool);
+  void writeCallback(Addr, DataBlock, bool, bool, bool, bool);
   void writeCallback(Addr, DataBlock, bool, bool, bool, bool, bool, MachineType);
   void writeCallback(Addr, DataBlock, bool, bool, bool, bool, bool, MachineType, Cycles, Cycles, Cycles);
 
