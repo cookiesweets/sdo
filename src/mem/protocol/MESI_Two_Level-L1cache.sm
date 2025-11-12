@@ -483,23 +483,23 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
         // Check for data access to blocks in I-cache and ifetchs to blocks in D-cache
         if (in_msg.Type == RubyRequestType:SPEC_LD_L0) {
-          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          Entry Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
           trigger(Event:SpecLoad_L0, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
         }
         else if (in_msg.Type == RubyRequestType:SPEC_LD_L1) {
-          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          Entry Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
           trigger(Event:SpecLoad_L1, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
         }
         else if (in_msg.Type == RubyRequestType:SPEC_LD_Mem) {
-          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          Entry Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
           trigger(Event:SpecLoad_Mem, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
         }
         else if (in_msg.Type == RubyRequestType:SPEC_LD_Perfect) {
-          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          Entry Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
           trigger(Event:SpecLoad_Perfect, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
         }
         else if (in_msg.Type == RubyRequestType:SPEC_LD_PerfectUnsafe) {
-          Entry Dcache_entry := getDCacheEntry(in_msg.LineAddress);
+          Entry Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
           trigger(Event:SpecLoad_PerfectUnsafe, in_msg.LineAddress, Dcache_entry, TBEs[in_msg.LineAddress]);
         }
         else if (in_msg.Type == RubyRequestType:IFETCH) {
