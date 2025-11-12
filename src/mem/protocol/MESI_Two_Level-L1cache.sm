@@ -670,7 +670,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   // Jiyong, MLDOM: SpecLoad_Mem hit/miss must send request to lower levels
   action(ij_issueGETSPEC_Mem_pass_L0, 'mp0', desc="Issue SpecLoad Mem to lower levels given it hits/misses L0") {
     peek(mandatoryQueue_in, RubyRequest) {
-      enqueue(requestNetwork_out, CoherenceMsg, request_latency) {
+      enqueue(requestNetwork_out, RequestMsg, request_latency) {
         out_msg.addr := address;
         out_msg.Type := CoherenceClass:GETSPEC_Mem;
         out_msg.Requestor := machineID;
@@ -688,7 +688,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   // Jiyong, MLDOM: SpecLoad_Perfect miss must send request to lower levels
   action(ij_issueGETSPEC_Perfect_pass_L0, 'pp0', desc="Issue SpecLoad Perfect to lower levels given it misses L0") {
     peek(mandatoryQueue_in, RubyRequest) {
-      enqueue(requestNetwork_out, CoherenceMsg, request_latency) {
+      enqueue(requestNetwork_out, RequestMsg, request_latency) {
         out_msg.addr := address;
         out_msg.Type := CoherenceClass:GETSPEC_Perfect;
         out_msg.Requestor := machineID;
