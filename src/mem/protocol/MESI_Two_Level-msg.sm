@@ -44,6 +44,9 @@ enumeration(CoherenceRequestType, desc="...") {
   GETSPEC_Mem,          desc="Speculative GetS, until Mem";
   GETSPEC_Perfect,      desc="Speculative GetS, until hit";
   GETSPEC_PerfectUnsafe,desc="Speculative GetS, until hit(unsafe)";
+  DATA_SPEC_FROM_L1,  desc="Data block for Spec load from L1";   // Jiyong, MLDOM
+  DATA_SPEC_FROM_L2,  desc="Data block for Spec load from L2";   // Jiyong, MLDOM
+  DATA_SPEC_FROM_MEM, desc="Data block for Spec load from Mem";   // Jiyong, MLDOM
 
   WB_ACK,    desc="Writeback ack";
 
