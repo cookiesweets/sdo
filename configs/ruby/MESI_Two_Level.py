@@ -133,7 +133,7 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
 
             # Jiyong, MLDOM: add extra channel from spec data from L1 to L0
         l1_cntrl.bufferFromL1_specData = MessageBuffer()
-        l1_cntrl.bufferFromL1_specData = ruby_system.network.slave
+        l1_cntrl.bufferFromL1_specData.master = ruby_system.network.slave
         
 
 
