@@ -639,7 +639,6 @@ class Packet : public Printable
     // [Jiyong, MLDOM] Multi-Level DOM flags
     bool isSpecL0() const            { return cmd.isSpecL0(); }
     bool isSpecL1() const            { return cmd.isSpecL1(); }
-    bool isSpecL2() const            { return cmd.isSpecL2(); }
     bool isSpecMem() const           { return cmd.isSpecMem(); }
     bool isSpecPerfect() const       { return cmd.isSpecPerfect(); }
     bool isSpecPerfectUnsafe() const { return cmd.isSpecPerfectUnsafe(); }
