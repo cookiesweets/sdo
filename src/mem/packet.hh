@@ -884,7 +884,9 @@ class Packet : public Printable
         :  cmd(_cmd), id((PacketId)_req), req(_req), data(nullptr), addr(0),
            _isSecure(false), size(0), headerDelay(0), snoopDelay(0),
            payloadDelay(0), srcIdx(-1), reqIdx(-1), isSplit(false),
-           seqNum(0), isSBHit(false), isL0Hit(false), isL1Hit(false), isL2Hit(false), isMemHit(false), // Jiyong, MLDOM
+           seqNum(0), isSBHit(false), isL0Hit(false), isL1Hit(false), isMemHit(false), // Jiyong, MLDOM
+           payloadDelay(0), srcIdx(-1), reqIdx(-1), isSplit(false), seqNum(0),
+           isSBHit(false), isL0Hit(false), isL1Hit(false), isMemHit(false), // Jiyong, MLDOM
            fromLevel(-1), isFinalPacket(true), copyData(false), carryData(false), confirmPkt(nullptr),
            aliased_reqIdx(-1), notTakenByLoop(false), takenByLoop(false), // Jiyong, MLDOM
            senderState(NULL)
@@ -909,7 +911,10 @@ class Packet : public Printable
         :  cmd(_cmd), id(_id ? _id : (PacketId)_req), req(_req), data(nullptr),
            addr(0), _isSecure(false), headerDelay(0), snoopDelay(0),
            payloadDelay(0), srcIdx(-1), reqIdx(-1), isSplit(false),
-           seqNum(0), isSBHit(false), isL0Hit(false), isL1Hit(false), isL2Hit(false), isMemHit(false), // Jiyong, MLDOM
+           seqNum(0), isSBHit(false), isL0Hit(false), isL1Hit(false), isMemHit(false), // Jiyong, MLDOM
+           addr(0), _isSecure(false), size(0), headerDelay(0), snoopDelay(0),
+           payloadDelay(0), srcIdx(-1), reqIdx(-1), isSplit(false), seqNum(0),
+           isSBHit(false), isL0Hit(false), isL1Hit(false), isMemHit(false), // Jiyong, MLDOM
            fromLevel(-1), isFinalPacket(true), copyData(false), carryData(false), confirmPkt(nullptr),
            aliased_reqIdx(-1), notTakenByLoop(false), takenByLoop(false), // Jiyong, MLDOM
            senderState(NULL)

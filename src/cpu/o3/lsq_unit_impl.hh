@@ -123,8 +123,8 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
             DPRINTF(JY, "a packet [sn:%lli] SpecLD_L0 from Level %d, is_final_packet = %d, carryData = %d\n", pkt->seqNum, pkt->fromLevel, pkt->isFinalPacket, pkt->carryData);
         else if (pkt->isSpecL1())
             DPRINTF(JY, "a packet [sn:%lli] SpecLD_L1 from Level %d, is_final_packet = %d, carryData = %d\n", pkt->seqNum, pkt->fromLevel, pkt->isFinalPacket, pkt->carryData);
-        else if (pkt->isSpecL2())
-            DPRINTF(JY, "a packet [sn:%lli] SpecLD_L2 from Level %d, is_final_packet = %d, carryData = %d\n", pkt->seqNum, pkt->fromLevel, pkt->isFinalPacket, pkt->carryData);
+        // else if (pkt->isSpecL2())
+        //     DPRINTF(JY, "a packet [sn:%lli] SpecLD_L2 from Level %d, is_final_packet = %d, carryData = %d\n", pkt->seqNum, pkt->fromLevel, pkt->isFinalPacket, pkt->carryData);
         else if (pkt->isSpecMem())
             DPRINTF(JY, "a packet [sn:%lli] SpecLD_Mem from Level %d, is_final_packet = %d, carryData = %d\n", pkt->seqNum, pkt->fromLevel, pkt->isFinalPacket, pkt->carryData);
         else if (pkt->isSpecPerfect())
@@ -136,7 +136,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
         DPRINTF(JY, "a validate packet for [sn:%lli]\n", pkt->seqNum);
 
     DPRINTF(JY, "recv a Packet [sn:%lli] with HitSB = %d, HitL0 = %d, HitL1 = %d, HitL2 = %d, HitMem = %d\n", 
-            pkt->seqNum, pkt->isSB_Hit(), pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isL2_Hit(), pkt->isMem_Hit());
+            pkt->seqNum, pkt->isSB_Hit(), pkt->isL0_Hit(), pkt->isL1_Hit(), , pkt->isMem_Hit());
 
     // Jiyong, set up cache hit status
     if (inst->isLoad() && !inst->needPostFetch()) {   // pkt is a non-spec load
@@ -228,7 +228,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                     inst->oblS_FstHalfHit_L0  = pkt->isL0_Hit();
                     inst->oblS_FstHalfHit_L1  = pkt->isL1_Hit();
                     inst->oblS_FstHalfHit_Mem = pkt->isMem_Hit();
-                    inst->oblS_FstHalfHit     = pkt->isSB_Hit() || pkt->isL0_Hit() || pkt->isL1_Hit() || pkt->isL2_Hit() || pkt->isMem_Hit();
+                    inst->oblS_FstHalfHit     = pkt->isSB_Hit() || pkt->isL0_Hit() || pkt->isL1_Hit() || pkt->isMem_Hit();
                     if (pkt->isFinalPacket)
                         inst->oblS_FstHalfComplete = true;
                 }
@@ -238,7 +238,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                     inst->oblS_SndHalfHit_L0  = pkt->isL0_Hit();
                     inst->oblS_SndHalfHit_L1  = pkt->isL1_Hit();
                     inst->oblS_SndHalfHit_Mem = pkt->isMem_Hit();
-                    inst->oblS_SndHalfHit     = pkt->isSB_Hit() || pkt->isL0_Hit() || pkt->isL1_Hit() || pkt->isL2_Hit() || pkt->isMem_Hit();
+                    inst->oblS_SndHalfHit     = pkt->isSB_Hit() || pkt->isL0_Hit() || pkt->isL1_Hit() || pkt->isMem_Hit();
                     if (pkt->isFinalPacket)
                         inst->oblS_SndHalfComplete = true;
                 }
@@ -296,7 +296,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
     if (inst->isLoad() && !pkt->isSpec() && !pkt->isExpose() && !pkt->isValidate()) {
         inst->loadLatency = cpu->numCycles.value() - inst->issueCycle;
         DPRINTF(JY, "Writeback event for nonspec ld [sn:%lli] at cycle %lld of load from Level %d (%d, %d,%d,%d) Latency = %d\n", inst->seqNum, cpu->numCycles.value(), inst->regLd_Hit_Level,
-                pkt->isSB_Hit(), pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isL2_Hit(), pkt->isMem_Hit(), inst->loadLatency);
+                pkt->isSB_Hit(), pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isMem_Hit(), inst->loadLatency);
         if (pkt->isL0_Hit()) {
             cpu->num_L0_nonspec_access ++;
             cpu->tot_L0_nonspec_access_latency += cpu->numCycles.value() - inst->issueCycle;
