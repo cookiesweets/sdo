@@ -760,7 +760,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
   // Jiyong, MLDOM: SpecLD (L2 or Mem) hit L2, send the response up
   action(hj_spec_load_hit_l2, "h2", desc="Spec load LX hits L2. send data to the L1 requestor") {
     peek(L1RequestL2Network_in, RequestMsg) {
-      enqueue(buffetToL0_specData_out, ResponseMsg, l2_response_latency) {
+      enqueue(bufferToL0_specData_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
         out_msg.addr := address;
         out_msg.Type := CoherenceResponseType:DATA_SPEC_FROM_L1;
@@ -781,7 +781,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
   // Jiyong, MLDOM: SpecLD (L2 or Mem) miss L2, send the dummy response up
   action(mj_spec_load_miss_l2, "m2", desc="Spec load LX misses L2. send miss to the L1 requestor") {
     peek(L1RequestL2Network_in, RequestMsg) {
-      enqueue(buffetToL0_specData_out, ResponseMsg, l2_response_latency) {
+      enqueue(bufferToL0_specData_out, ResponseMsg, l2_response_latency) {
         out_msg.addr := address;
         out_msg.Type := CoherenceResponseType:DATA_SPEC_FROM_L1;
         out_msg.Sender := machineID;
