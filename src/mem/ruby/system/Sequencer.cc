@@ -596,8 +596,8 @@ Sequencer::recordMissLatency(const Cycles cycles, const RubyRequestType type,
 
 void
 Sequencer::writeCallback(Addr address, DataBlock& data,
-                         const bool externalHit,
-                         const bool hitAtL0, const bool hitAtL1, const bool hitAtL2, const bool hitAtMem,
+                         const bool externalHit, const bool hitAtL0,
+                         const bool hitAtL1, const bool hitAtMem,
                          const MachineType mach,
                          const Cycles initialRequestTime,
                          const Cycles forwardRequestTime,
@@ -675,8 +675,8 @@ bool Sequencer::updateSBB(PacketPtr pkt, DataBlock& data, Addr address, bool dat
 // [SafeSpec] Called by Ruby to send a response to CPU.
 void
 Sequencer::readCallback(Addr address, DataBlock& data,
-                        bool externalHit,
-                        const bool hitAtL0, const bool hitAtL1, const bool hitAtL2, const bool hitAtMem,
+                        bool externalHit, const bool hitAtL0,
+                        const bool hitAtL1, const bool hitAtMem,
                         const MachineType mach,
                         Cycles initialRequestTime,
                         Cycles forwardRequestTime,
@@ -709,10 +709,6 @@ Sequencer::readCallback(Addr address, DataBlock& data,
     else if (hitAtL1) {
         pkt->setL1_Hit();
         pkt->fromLevel = 1;
-    }
-    else if (hitAtL2) {
-        pkt->setL2_Hit();
-        pkt->fromLevel = 2;
     }
     else if (hitAtMem) {
         pkt->setMem_Hit();
@@ -816,7 +812,7 @@ Sequencer::readCallbackObliv_fromL0(Addr address,
     if (RubySystem::getOblSContentionEnabled())
         updateSBB(pkt, data_from_L0, address, hitAtL0);
 
-    if (request->m_type == RubyRequestType_SPEC_LD_L0) {
+    if (request->m_type == RubyRequestType_SPEC_LD_L0 || request->m_type == RubyRequestType_SPEC_LD) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_L0 commands callback readCallback_fromL0 (sn=%lli, idx=%d-%d, addr=%#x) --> last readCallback\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
         // remove the request
         m_specldRequestTable.erase(i);
@@ -827,8 +823,7 @@ Sequencer::readCallbackObliv_fromL0(Addr address,
     }
     else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_L2 commands callback readCallback_fromL0 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-    }
-    else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
+    } else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_Mem commands callback readCallback_fromL0 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
     }
     else if (request->m_type == RubyRequestType_SPEC_LD_Perfect) {
@@ -903,8 +898,7 @@ Sequencer::readCallbackObliv_fromL1(Addr address,
     }
     else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_L2 commands callback readCallback_fromL1 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-    }
-    else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
+    } else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_Mem commands callback readCallback_fromL1 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
     }
     else if (request->m_type == RubyRequestType_SPEC_LD_Perfect) {
@@ -941,95 +935,16 @@ Sequencer::readCallbackObliv_fromL1(Addr address,
 
 // Jiyong, MLDOM: readcallback for hit/miss in L2
 void
-Sequencer::readCallbackObliv_fromL2(Addr address,
-                                    const bool hitAtL2,
-                                    DataBlock& data_from_L2,
+Sequencer::readCallbackObliv_fromMem(Addr address,
+                                     const bool hitAtMem,
+                                     DataBlock& data_from_Mem,
                                     const int  reqIdx,
                                     const MachineType mach,
-                                    const Cycles initialRequestTime,
-                                    const Cycles forwardRequestTime,
-                                    const Cycles firstResponseTime)
+                                     const Cycles initialRequestTime, const Cycles forwardRequestTime, const Cycles firstResponseTime)
 {
     assert(address == makeLineAddress(address));
 
     SpecRequestTable::iterator i = m_specldRequestTable.find(make_pair(address, reqIdx));
-    assert(i != m_specldRequestTable.end());
-    SequencerRequest* request = i->second;
-
-    PacketPtr pkt = request->pkt;
-
-    if (!pkt->isSpec()) {
-        DPRINTFR(JY_Ruby, "%10s ERROR: readCallbackObliv_fromL2: (sn=%lli, idx=%d-%d, addr=%#x) is not Spec\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-        assert(0);
-    }
-
-    //Jiyong: for obls Contention simulation, update specbuffer with data on OblS return
-    if (RubySystem::getOblSContentionEnabled())
-        updateSBB(pkt, data_from_L2, address, hitAtL2);
-
-    if (request->m_type == RubyRequestType_SPEC_LD_L0) {
-        printf("ERROR: SPEC_LD_L0 should not call readCallbackObliv_fromL2\n");
-        assert(0);
-    }
-    else if (request->m_type == RubyRequestType_SPEC_LD_L1) {
-        printf("ERROR: SPEC_LD_L1 should not call readCallbackObliv_fromL2\n");
-        assert(0);
-    }
-    else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
-        DPRINTFR(JY_Ruby, "%10s SPEC_LD_L2 commands callback readCallback_fromL2 (sn=%lli, idx=%d-%d, addr=%#x) --> last readCallback\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-        // remove the request
-        m_specldRequestTable.erase(i);
-        markRemoved();
-    }
-    else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
-        DPRINTFR(JY_Ruby, "%10s SPEC_LD_Mem commands callback readCallback_fromL2 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-    }
-    else if (request->m_type == RubyRequestType_SPEC_LD_Perfect) {
-        // remove the request if this perfect oblS hits L2 (since no future cache access occurs)
-        if (hitAtL2) {
-            m_specldRequestTable.erase(i);
-            markRemoved();
-        }
-        DPRINTFR(JY_Ruby, "%10s SPEC_LD_Perfect commands callback readCallback_fromL2 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-    }
-    else if (request->m_type == RubyRequestType_SPEC_LD_PerfectUnsafe) {
-        // remove the request if this perfectUnsafe oblS hits L2 (since no future cache access occurs)
-        if (hitAtL2) {
-            m_specldRequestTable.erase(i);
-            markRemoved();
-        }
-        DPRINTFR(JY_Ruby, "%10s SPEC_LD_PerfectUnsafe commands callback readCallback_fromL2 (sn=%lli, idx=%d-%d, addr=%#x)\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
-    }
-    else {
-        DPRINTFR(JY_Ruby, "ERROR: readCallbackObliv_fromL2 is called by unknwon RubyRequestType: %s\n", request->m_type);
-        assert(0);
-    }
-
-    DataBlock ret_data;
-
-    if (hitAtL2) {
-        pkt->setL2_Hit();
-        ret_data = data_from_L2;
-    }
-
-    hitCallbackObliv(request, hitAtL2, ret_data, 2, // 2 means the response is from L2
-                true, mach, false, initialRequestTime, forwardRequestTime, firstResponseTime);
-}
-
-// Jiyong, MLDOM: readcallback for hit/miss in Mem
-void
-Sequencer::readCallbackObliv_fromMem(Addr address,
-                                     const bool hitAtMem,
-                                     DataBlock& data_from_Mem,
-                                     const int  reqIdx,
-                                     const MachineType mach,
-                                     const Cycles initialRequestTime,
-                                     const Cycles forwardRequestTime,
-                                     const Cycles firstResponseTime)
-{
-    assert(address == makeLineAddress(address));
-
-    SpecRequestTable::iterator i = m_specldRequestTable.find(std::make_pair(address, reqIdx));
     assert(i != m_specldRequestTable.end());
     SequencerRequest* request = i->second;
 
@@ -1052,10 +967,6 @@ Sequencer::readCallbackObliv_fromMem(Addr address,
         printf("ERROR: SPEC_LD_L1 should not call readCallbackObliv_fromMem\n");
         assert(0);
     }
-    else if (request->m_type == RubyRequestType_SPEC_LD_L2) {
-        printf("ERROR: SPEC_LD_L2 should not call readCallbackObliv_fromMem\n");
-        assert(0);
-    }
     else if (request->m_type == RubyRequestType_SPEC_LD_Mem) {
         DPRINTFR(JY_Ruby, "%10s SPEC_LD_Mem commands callback readCallback_fromMem (sn=%lli, idx=%d-%d, addr=%#x) --> last readCallback\n", curTick(), pkt->seqNum, pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
         // remove the request
@@ -1075,7 +986,7 @@ Sequencer::readCallbackObliv_fromMem(Addr address,
         markRemoved();
     }
     else {
-        DPRINTFR(JY_Ruby, "ERROR: readCallbackObliv_fromL2 is called by unknwon RubyRequestType: %s\n", request->m_type);
+        DPRINTFR(JY_Ruby, "ERROR: readCallbackObliv_fromMem is called by unknwon RubyRequestType: %s\n", request->m_type);
         assert(0);
     }
 
@@ -1086,7 +997,7 @@ Sequencer::readCallbackObliv_fromMem(Addr address,
         ret_data = data_from_Mem;
     }
 
-    hitCallbackObliv(request, hitAtMem, ret_data, 3, // 3 means the response is from Memory
+    hitCallbackObliv(request, hitAtMem, ret_data, 2, // 2 means the response is from Memory
                 true, mach, false, initialRequestTime, forwardRequestTime, firstResponseTime);
 }
 
@@ -1350,60 +1261,8 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
             assert(0);
         }
     }
-    else if (type == RubyRequestType_SPEC_LD_L2) {
-        if (fromLevel < 2) { // sent by L0 or L1
-            DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_L2 (idx=%d-%d, addr=%#x), hit=%d at L%d, return early packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit, fromLevel);
-            // return an intermediate packet
-            pkt_to_send = new Packet(pkt, false, true);  // we copy the original packet
-            pkt_to_send->fromLevel     = fromLevel;
-            pkt_to_send->isFinalPacket = false;
-            pkt_to_send->confirmPkt    = pkt;
-
-            // write the dependentPkt if any
-            for (auto& dependentPkt : srequest->dependentRequests) {
-                if (hit && makeLineAddress(pkt->getAddr()) == makeLineAddress(dependentPkt->getAddr())) {
-                    DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
-                            curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                    dependentPkt->setL0_Hit();
-                    memcpy(dependentPkt->getPtr<uint8_t>(),
-                           data.getData(getOffset(dependentPkt->getAddr()), dependentPkt->getSize()),
-                           dependentPkt->getSize());
-                }
-            }
-        }
-        else if (fromLevel == 2) {
-            DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_L2 (idx=%d-%d, addr=%#x), hit=%d at L2, return original packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit);
-            // return the final, complet, original packet
-            pkt_to_send = pkt;  // send the original packet
-            pkt_to_send->fromLevel     = fromLevel;
-            pkt_to_send->isFinalPacket = true;
-            pkt_to_send->confirmPkt    = pkt;
-
-            // write and return the dependentPkt if any
-            for (auto& dependentPkt : srequest->dependentRequests) {
-                dependentPkt->fromLevel     = 0;
-                dependentPkt->isFinalPacket = true;
-
-                if (hit && makeLineAddress(pkt->getAddr()) == makeLineAddress(dependentPkt->getAddr())) {
-                    DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
-                            curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                    dependentPkt->setL0_Hit();
-                    memcpy(dependentPkt->getPtr<uint8_t>(),
-                           data.getData(getOffset(dependentPkt->getAddr()), dependentPkt->getSize()),
-                           dependentPkt->getSize());
-                }
-
-                ruby_hit_callback(dependentPkt);
-            }
-            delete srequest;
-        }
-        else {
-            printf("ERROR: RubyRequestType_SPEC_LD_L2 receives response from level %d\n", fromLevel);
-            assert(0);
-        }
-    }
     else if (type == RubyRequestType_SPEC_LD_Mem) {
-        if (fromLevel < 3) { // sent by L0 or L1 or L2
+        if (fromLevel < 2) { // sent by L0 or L1
             DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_Mem (idx=%d-%d, addr=%#x), hit=%d at L%d, return early packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit, fromLevel);
             pkt_to_send = new Packet(pkt, false, true);  // we copy the original packet
             pkt_to_send->fromLevel     = fromLevel;
@@ -1422,7 +1281,7 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
                 }
             }
         }
-        else if (fromLevel == 3) {
+        else if (fromLevel == 2) {
             DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_Mem (idx=%d-%d, addr=%#x), hit=%d at Mem, return original packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit);
             // return the final, complete, original packet
             pkt_to_send = pkt;  // send the original packet
@@ -1449,12 +1308,12 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
             delete srequest;
         }
         else {
-            printf("ERROR: RubyRequestType_SPEC_LD_L2 receives response from level %d\n", fromLevel);
+            printf("ERROR: RubyRequestType_SPEC_LD_Mem receives response from level %d\n", fromLevel);
             assert(0);
         }
     }
     else if (type == RubyRequestType_SPEC_LD_Perfect) {
-        if (hit || fromLevel == 3) {    // send the original packet if it hits or the packet is from memory
+        if (hit || fromLevel == 2) {    // send the original packet if it hits or the packet is from memory
             DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_Perfect (idx=%d-%d, addr=%#x), hit=%d at L%d, return original packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit, fromLevel);
             pkt_to_send = pkt;  // send the original packet
             pkt_to_send->fromLevel     = fromLevel;
@@ -1471,7 +1330,7 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
         }
     }
     else if (type == RubyRequestType_SPEC_LD_PerfectUnsafe) {
-        if (hit || fromLevel == 3) {    // send the original packet if it hits or the packet is from memory
+        if (hit || fromLevel == 2) {    // send the original packet if it hits or the packet is from memory
             DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_PerfectUnsafe (idx=%d-%d, addr=%#x), hit=%d at L%d, return original packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit, fromLevel);
             pkt_to_send = pkt;  // send the original packet
             pkt_to_send->fromLevel     = fromLevel;
@@ -1492,9 +1351,9 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
         assert(0);
     }
 
-    DPRINTF(JY_Ruby, "hitCallbackObliv: pkt_to_send(sn=%lli) froLevel=%d, finalPkt=%d, mhas HitL0 = %d, HitL1 = %d, HitL2 = %d, HitMem = %d\n", 
+    DPRINTF(JY_Ruby, "hitCallbackObliv: pkt_to_send(sn=%lli) froLevel=%d, finalPkt=%d, mhas HitL0 = %d, HitL1 = %d, HitMem = %d\n",
             pkt_to_send->seqNum, pkt_to_send->fromLevel, pkt_to_send->isFinalPacket, pkt_to_send->isL0_Hit(), pkt_to_send->isL1_Hit(), pkt_to_send->isL2_Hit(), pkt_to_send->isMem_Hit());
-    DPRINTF(JY_Ruby, "hitCallbackObliv: main pkt(sn=%lli) has HitL0 = %d, HitL1 = %d, HitL2 = %d, HitMem = %d\n", 
+    DPRINTF(JY_Ruby, "hitCallbackObliv: main pkt(sn=%lli) has HitL0 = %d, HitL1 = %d, HitMem = %d\n",
             pkt->seqNum, pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isL2_Hit(), pkt->isMem_Hit());
 
     // sanity check

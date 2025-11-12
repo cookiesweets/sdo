@@ -144,20 +144,17 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
             if (pkt->isFirst()) {
                 if      (pkt->isL0_Hit())     inst->regLd_Hit_Level = max(inst->regLd_Hit_Level, 0);
                 else if (pkt->isL1_Hit())     inst->regLd_Hit_Level = max(inst->regLd_Hit_Level, 1);
-                else if (pkt->isL2_Hit())     inst->regLd_Hit_Level = max(inst->regLd_Hit_Level, 2);
                 else if (pkt->isMem_Hit())    inst->regLd_Hit_Level = max(inst->regLd_Hit_Level, 3);
             }
             else {
                 if      (pkt->isL0_Hit())     inst->regLd_Hit_Level = max(inst->regLd_Hit_Level, 0);
                 else if (pkt->isL1_Hit())     inst->regLd_Hit_Level = max(inst->regLd_Hit_Level, 1);
-                else if (pkt->isL2_Hit())     inst->regLd_Hit_Level = max(inst->regLd_Hit_Level, 2);
                 else if (pkt->isMem_Hit())    inst->regLd_Hit_Level = max(inst->regLd_Hit_Level, 3);
             }
         }
         else {
             if      (pkt->isL0_Hit())         inst->regLd_Hit_Level = 0;
             else if (pkt->isL1_Hit())         inst->regLd_Hit_Level = 1;
-            else if (pkt->isL2_Hit())         inst->regLd_Hit_Level = 2;
             else if (pkt->isMem_Hit())        inst->regLd_Hit_Level = 3;
         }
         DPRINTF(JY, "reg load [sn:%lli] hits at level %d\n", inst->seqNum, inst->regLd_Hit_Level);
@@ -168,20 +165,17 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
             if (pkt->isFirst()) {
                 if      (pkt->isL0_Hit())     inst->ExpVal_Hit_Level = max(inst->ExpVal_Hit_Level, 0);
                 else if (pkt->isL1_Hit())     inst->ExpVal_Hit_Level = max(inst->ExpVal_Hit_Level, 1);
-                else if (pkt->isL2_Hit())     inst->ExpVal_Hit_Level = max(inst->ExpVal_Hit_Level, 2);
                 else if (pkt->isMem_Hit())    inst->ExpVal_Hit_Level = max(inst->ExpVal_Hit_Level, 3);
             }
             else {
                 if      (pkt->isL0_Hit())     inst->ExpVal_Hit_Level = max(inst->ExpVal_Hit_Level, 0);
                 else if (pkt->isL1_Hit())     inst->ExpVal_Hit_Level = max(inst->ExpVal_Hit_Level, 1);
-                else if (pkt->isL2_Hit())     inst->ExpVal_Hit_Level = max(inst->ExpVal_Hit_Level, 2);
                 else if (pkt->isMem_Hit())    inst->ExpVal_Hit_Level = max(inst->ExpVal_Hit_Level, 3);
             }
         }
         else {
             if      (pkt->isL0_Hit())         inst->ExpVal_Hit_Level = 0;
             else if (pkt->isL1_Hit())         inst->ExpVal_Hit_Level = 1;
-            else if (pkt->isL2_Hit())         inst->ExpVal_Hit_Level = 2;
             else if (pkt->isMem_Hit())        inst->ExpVal_Hit_Level = 3;
         }
         if (pkt->isExpose())
@@ -233,7 +227,6 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                     inst->oblS_FstHalfHit_SB  = pkt->isSB_Hit();
                     inst->oblS_FstHalfHit_L0  = pkt->isL0_Hit();
                     inst->oblS_FstHalfHit_L1  = pkt->isL1_Hit();
-                    inst->oblS_FstHalfHit_L2  = pkt->isL2_Hit();
                     inst->oblS_FstHalfHit_Mem = pkt->isMem_Hit();
                     inst->oblS_FstHalfHit     = pkt->isSB_Hit() || pkt->isL0_Hit() || pkt->isL1_Hit() || pkt->isL2_Hit() || pkt->isMem_Hit();
                     if (pkt->isFinalPacket)
@@ -244,7 +237,6 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                     inst->oblS_SndHalfHit_SB  = pkt->isSB_Hit();
                     inst->oblS_SndHalfHit_L0  = pkt->isL0_Hit();
                     inst->oblS_SndHalfHit_L1  = pkt->isL1_Hit();
-                    inst->oblS_SndHalfHit_L2  = pkt->isL2_Hit();
                     inst->oblS_SndHalfHit_Mem = pkt->isMem_Hit();
                     inst->oblS_SndHalfHit     = pkt->isSB_Hit() || pkt->isL0_Hit() || pkt->isL1_Hit() || pkt->isL2_Hit() || pkt->isMem_Hit();
                     if (pkt->isFinalPacket)
@@ -263,19 +255,15 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                                      (inst->oblS_FstHalfHit_SB || inst->oblS_FstHalfHit_L0 || inst->oblS_FstHalfHit_L1) &&
                                      (inst->oblS_SndHalfHit_SB || inst->oblS_SndHalfHit_L0 || inst->oblS_SndHalfHit_L1);
 
-                inst->oblS_Hit_L2  = !inst->oblS_Hit_SB && !inst->oblS_Hit_L0 && !inst->oblS_Hit_L1 &&
-                                     (inst->oblS_FstHalfHit_SB || inst->oblS_FstHalfHit_L0 || inst->oblS_FstHalfHit_L1 || inst->oblS_FstHalfHit_L2) &&
-                                     (inst->oblS_SndHalfHit_SB || inst->oblS_SndHalfHit_L0 || inst->oblS_SndHalfHit_L1 || inst->oblS_SndHalfHit_L2);
-
-                inst->oblS_Hit_Mem = !inst->oblS_Hit_SB && !inst->oblS_Hit_L0 && !inst->oblS_Hit_L1 && !inst->oblS_Hit_L2 &&
-                                     (inst->oblS_FstHalfHit_SB || inst->oblS_FstHalfHit_L0 || inst->oblS_FstHalfHit_L1 || inst->oblS_FstHalfHit_L2 || inst->oblS_FstHalfHit_Mem) &&
-                                     (inst->oblS_SndHalfHit_SB || inst->oblS_SndHalfHit_L0 || inst->oblS_SndHalfHit_L1 || inst->oblS_SndHalfHit_L2 || inst->oblS_SndHalfHit_Mem);
+                inst->oblS_Hit_Mem = !inst->oblS_Hit_SB && !inst->oblS_Hit_L0 && !inst->oblS_Hit_L1 &&
+                                     (inst->oblS_FstHalfHit_SB || inst->oblS_FstHalfHit_L0 || inst->oblS_FstHalfHit_L1 || inst->oblS_FstHalfHit_Mem) &&
+                                     (inst->oblS_SndHalfHit_SB || inst->oblS_SndHalfHit_L0 || inst->oblS_SndHalfHit_L1 || inst->oblS_SndHalfHit_Mem);
 
                 inst->oblS_Hit     = inst->oblS_Hit_SB || inst->oblS_Hit_L0 || inst->oblS_Hit_L1 || inst->oblS_Hit_L2 || inst->oblS_Hit_Mem;
 
                 inst->oblS_Complete = inst->oblS_FstHalfComplete && inst->oblS_SndHalfComplete;
 
-                DPRINTF(JY, "This SpecLD (split) has HitSB = %d. HitL0 = %d, HitL1 = %d, HitL2 = %d, HitL3 = %d, complete = %d\n",
+                DPRINTF(JY, "This SpecLD (split) has HitSB = %d. HitL0 = %d, HitL1 = %d, HitMem = %d, complete = %d\n",
                         inst->oblS_Hit_SB, inst->oblS_Hit_L0, inst->oblS_Hit_L1, inst->oblS_Hit_L2, inst->oblS_Hit_Mem, inst->oblS_Complete);
             }
             else {
@@ -288,10 +276,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                 inst->oblS_Hit_L1  = !inst->oblS_Hit_SB && !inst->oblS_Hit_L0 &&
                                      pkt->isL1_Hit();
 
-                inst->oblS_Hit_L2  = !inst->oblS_Hit_SB && !inst->oblS_Hit_L0 && !inst->oblS_Hit_L1 &&
-                                     pkt->isL2_Hit();
-
-                inst->oblS_Hit_Mem = !inst->oblS_Hit_SB && !inst->oblS_Hit_L0 && !inst->oblS_Hit_L1 && !inst->oblS_Hit_L2 &&
+                inst->oblS_Hit_Mem = !inst->oblS_Hit_SB && !inst->oblS_Hit_L0 && !inst->oblS_Hit_L1 &&
                                      pkt->isMem_Hit();
 
                 inst->oblS_Hit     = inst->oblS_Hit_SB || inst->oblS_Hit_L0 || inst->oblS_Hit_L1 || inst->oblS_Hit_L2 || inst->oblS_Hit_Mem;
@@ -299,7 +284,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                 if (pkt->isFinalPacket)
                     inst->oblS_Complete = true;
 
-                DPRINTF(JY, "This SpecLD (not split) now has HitSB = %d, HitL0 = %d, HitL1 = %d, HitL2 = %d, HitL3 = %d, complete = %d\n",
+                DPRINTF(JY, "This SpecLD (not split) now has HitSB = %d, HitL0 = %d, HitL1 = %d, HitMem = %d, complete = %d\n",
                         inst->oblS_Hit_SB, inst->oblS_Hit_L0, inst->oblS_Hit_L1, inst->oblS_Hit_L2, inst->oblS_Hit_Mem, inst->oblS_Complete);
             }
             // Jiyong, MLDOM, TODO: add the value prediction here
@@ -310,7 +295,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
     // Jiyong: print latency numbers
     if (inst->isLoad() && !pkt->isSpec() && !pkt->isExpose() && !pkt->isValidate()) {
         inst->loadLatency = cpu->numCycles.value() - inst->issueCycle;
-        DPRINTF(JY, "Writeback event for nonspec ld [sn:%lli] at cycle %lld of load from Level %d (%d, %d,%d,%d,%d) Latency = %d\n", inst->seqNum, cpu->numCycles.value(), inst->regLd_Hit_Level, 
+        DPRINTF(JY, "Writeback event for nonspec ld [sn:%lli] at cycle %lld of load from Level %d (%d, %d,%d,%d) Latency = %d\n", inst->seqNum, cpu->numCycles.value(), inst->regLd_Hit_Level,
                 pkt->isSB_Hit(), pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isL2_Hit(), pkt->isMem_Hit(), inst->loadLatency);
         if (pkt->isL0_Hit()) {
             cpu->num_L0_nonspec_access ++;
@@ -319,10 +304,6 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
         else if (pkt->isL1_Hit()) {
             cpu->num_L1_nonspec_access ++;
             cpu->tot_L1_nonspec_access_latency += cpu->numCycles.value() - inst->issueCycle;
-        }
-        else if (pkt->isL2_Hit()) {
-            cpu->num_L2_nonspec_access ++;
-            cpu->tot_L2_nonspec_access_latency += cpu->numCycles.value() - inst->issueCycle;
         }
         else if (pkt->isMem_Hit()) {
             cpu->num_Mem_nonspec_access ++;
@@ -338,10 +319,6 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
         else if (pkt->isL1_Hit() && pkt->fromLevel == 1) {
             cpu->num_L1_spec_access ++;
             cpu->tot_L1_spec_access_latency += cpu->numCycles.value() - inst->issueCycle;
-        }
-        else if (pkt->isL2_Hit() && pkt->fromLevel == 2) {
-            cpu->num_L2_spec_access ++;
-            cpu->tot_L2_spec_access_latency += cpu->numCycles.value() - inst->issueCycle;
         }
         else if (pkt->isMem_Hit() && pkt->fromLevel == 3) {
             cpu->num_Mem_spec_access ++;
@@ -399,19 +376,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                             else if (inst->oblS_Hit_L1)
                                 numSpecLdL1_hitL1++;
                             else
-                                numSpecLdL1_miss++;
-                        }
-                        else if (inst->pred_level == Cache_L3) {
-                            if (inst->oblS_Hit_SB)
-                                numSpecLdL2_hitSB++;
-                            else if (inst->oblS_Hit_L0)
-                                numSpecLdL2_hitL0++;
-                            else if (inst->oblS_Hit_L1)
-                                numSpecLdL2_hitL1++;
-                            else if (inst->oblS_Hit_L2)
-                                numSpecLdL2_hitL2++;
-                            else
-                                numSpecLdL2_miss++;
+                                numSpecLdL1_miss++;;
                         }
                         else if (inst->pred_level == DRAM) {
                             if (inst->oblS_Hit_SB)
@@ -420,8 +385,6 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                                 numSpecLdMem_hitL0++;
                             else if (inst->oblS_Hit_L1)
                                 numSpecLdMem_hitL1++;
-                            else if (inst->oblS_Hit_L2)
-                                numSpecLdMem_hitL2++;
                             else if (inst->oblS_Hit_Mem)
                                 numSpecLdMem_hitMem++;
                             else
@@ -434,8 +397,6 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                                 numSpecLdPerfect_hitL0++;
                             else if (inst->oblS_Hit_L1)
                                 numSpecLdPerfect_hitL1++;
-                            else if (inst->oblS_Hit_L2)
-                                numSpecLdPerfect_hitL2++;
                             else if (inst->oblS_Hit_Mem)
                                 numSpecLdPerfect_hitMem++;
                             else
@@ -448,8 +409,6 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                                 numSpecLdPerfectUnsafe_hitL0++;
                             else if (inst->oblS_Hit_L1)
                                 numSpecLdPerfectUnsafe_hitL1++;
-                            else if (inst->oblS_Hit_L2)
-                                numSpecLdPerfectUnsafe_hitL2++;
                             else if (inst->oblS_Hit_Mem)
                                 numSpecLdPerfectUnsafe_hitMem++;
                             else
@@ -2283,8 +2242,6 @@ LSQUnit<Impl>::exposeLoads()
                             numSquashOnMiss_SpecLdL0++;
                         else if (load_inst->pred_level == Cache_L2)
                             numSquashOnMiss_SpecLdL1++;
-                        else if (load_inst->pred_level == Cache_L3)
-                            numSquashOnMiss_SpecLdL2++;
                         else if (load_inst->pred_level == DRAM)
                             numSquashOnMiss_SpecLdMem++;
                         else if (load_inst->pred_level == Perfect_Level)
@@ -2512,8 +2469,6 @@ LSQUnit<Impl>::exposeLoads()
                             numSquashOnMiss_SpecLdL0++;
                         else if (load_inst->pred_level == Cache_L2)
                             numSquashOnMiss_SpecLdL1++;
-                        else if (load_inst->pred_level == Cache_L3)
-                            numSquashOnMiss_SpecLdL2++;
                         else if (load_inst->pred_level == DRAM)
                             numSquashOnMiss_SpecLdMem++;
                         else if (load_inst->pred_level == Perfect_Level)

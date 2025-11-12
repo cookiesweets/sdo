@@ -990,7 +990,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     assert(is_valid(cache_entry));
     DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
     L1Dcache.setMRU(cache_entry);
-    sequencer.readCallback(address, cache_entry.DataBlk);
+    sequencer.readCallback(address, cache_entry.DataBlk, false, true);
   }
 
   action(h_spec_load_hit, "hs",
@@ -998,7 +998,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   {
     assert(is_valid(cache_entry));
     DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
-    sequencer.readCallback(address, cache_entry.DataBlk);
+    sequencer.readCallbackObliv_fromL0(address, true, cache_entry.DataBlk, in_msg.idx);
   }
 
   action(h_ifetch_hit, "hi", desc="Notify sequencer the instruction fetch completed.")
@@ -1006,7 +1006,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     assert(is_valid(cache_entry));
     DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
     L1Icache.setMRU(cache_entry);
-    sequencer.readCallback(address, cache_entry.DataBlk);
+    sequencer.readCallback(address, cache_entry.DataBlk, false, true);
   }
 
   action(hx_load_hit, "hx", desc="Notify sequencer the load completed.")
@@ -1015,15 +1015,19 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
     L1Icache.setMRU(address);
     L1Dcache.setMRU(address);
-    sequencer.readCallback(address, cache_entry.DataBlk, true);
+    sequencer.readCallback(address, cache_entry.DataBlk, true,
+                        cache_entry.hitAtL0, cache_entry.hitAtL1, cache_entry.hitAtMem);   // Jiyong: load miss L0, receive L1's hit status
+    cache_entry.hitAtL0  := false;
+    cache_entry.hitAtL1  := false;
+    cache_entry.hitAtMem := false;
   }
 
   action(hsx_spec_load_hit, "hsx", desc="Notify sequencer the external load completed.")
   {
-    peek(responseL1Network_in, ResponseMsg) {
-      // [SafeSpec] Hack for in_msg.DataBlk returning const DataBlk
-      tbe.DataBlk := in_msg.DataBlk;
-      sequencer.readCallback(address, tbe.DataBlk, true);
+    peek(mandatoryQueue_in, RubyRequest) {
+      assert(is_valid(cache_entry));
+      DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=0) hits L0: address: %#x, idx: %d; call readCallback_fromL0\n", address, in_msg.idx);
+      sequencer.readCallbackObliv_fromL0(address, true, cache_entry.DataBlk, in_msg.idx);
     }
   }
 
@@ -1032,7 +1036,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     assert(is_valid(cache_entry));
     DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
     L1Dcache.setMRU(cache_entry);
-    sequencer.writeCallback(address, cache_entry.DataBlk);
+    DPRINTF(JY_Ruby, "address: %#x hits in L0\n", address);
+    sequencer.writeCallback(address, cache_entry.DataBlk, false, true);    // Jiyong: store hit L0 in E/M state, hitAtL0
     cache_entry.Dirty := true;
   }
 
@@ -1042,8 +1047,12 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
     L1Icache.setMRU(address);
     L1Dcache.setMRU(address);
-    sequencer.writeCallback(address, cache_entry.DataBlk, true);
+    sequencer.writeCallback(address, cache_entry.DataBlk, true,
+                        cache_entry.hitAtL0, cache_entry.hitAtL1, cache_entry.hitAtMem);   // Jiyong: store miss L0, receive L1's hit status
     cache_entry.Dirty := true;
+    cache_entry.hitAtL0  := false;
+    cache_entry.hitAtL1  := false;
+    cache_entry.hitAtMem := false;
   }
 
   action(i_allocateTBE, "i", desc="Allocate TBE (isPrefetch=0, number of invalidates=0)") {
@@ -1080,6 +1089,13 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     profileMsgDelay(1, ticksToCycles(delay));
   }
 
+  // Jiyong, MLDOM: pop spec data response
+  action(osd_popIncomingSpecDataResponseQueue, "osd",
+         desc="Pop Incoming spec data Response queue and profile the delay within this virtual network") {
+    Tick delay := messgeBuffer_specData_in.dequeue(clockEdge());
+    profileMsgDelay(1, ticksToCycles(delay));
+  }
+
   action(s_deallocateTBE, "s", desc="Deallocate TBE") {
     TBEs.deallocate(address);
     unset_tbe();
@@ -1090,6 +1106,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       assert(is_valid(cache_entry));
       cache_entry.DataBlk := in_msg.DataBlk;
       cache_entry.Dirty := in_msg.Dirty;
+      cache_entry.hitAtL0  := in_msg.hitAtL0;
+      cache_entry.hitAtL1  := in_msg.hitAtL1;
+      cache_entry.hitAtMem := in_msg.hitAtMem;
     }
   }
 
@@ -1148,6 +1167,16 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       ++L1Dcache.demand_hits;
   }
 
+  action(po_observeHit, "\ph", desc="Inform the prefetcher about the hit") {
+    peek(mandatoryQueue_in, RubyRequest) {
+      if (cache_entry.isPrefetch) {
+        DPRINTF(JY_Ruby, "observeHit: address: %#x, idx: %d\n", in_msg.LineAddress, in_msg.idx);
+        prefetcher.observePfHit(in_msg.LineAddress);
+        cache_entry.isPrefetch := false;
+      }
+    }
+  }
+  
   action(po_observeMiss, "\po", desc="Inform the prefetcher about the miss") {
       peek(mandatoryQueue_in, RubyRequest) {
           if (enable_prefetch) {

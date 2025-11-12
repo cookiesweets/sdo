@@ -147,8 +147,6 @@ class MemCmd
         ReadSpecL0Resp,
         ReadSpecL1Req,
         ReadSpecL1Resp,
-        ReadSpecL2Req,
-        ReadSpecL2Resp,
         ReadSpecMemReq,
         ReadSpecMemResp,
         ReadSpecPerfectReq,
@@ -190,7 +188,6 @@ class MemCmd
         /* [Jiyong, MLDOM] New attributes */
         IsSpecL0,
         IsSpecL1,
-        IsSpecL2,
         IsSpecMem,
         IsSpecPerfect,
         IsSpecPerfectUnsafe,
@@ -269,7 +266,6 @@ class MemCmd
     // [Jiyong, MLDOM] MLDOM attributes
     bool isSpecL0() const            { return testCmdAttrib(IsSpecL0); }
     bool isSpecL1() const            { return testCmdAttrib(IsSpecL1); }
-    bool isSpecL2() const            { return testCmdAttrib(IsSpecL2); }
     bool isSpecMem() const           { return testCmdAttrib(IsSpecMem); }
     bool isSpecPerfect() const       { return testCmdAttrib(IsSpecPerfect); }
     bool isSpecPerfectUnsafe() const { return testCmdAttrib(IsSpecPerfectUnsafe); }
@@ -449,7 +445,6 @@ class Packet : public Printable
     bool isSBHit;
     bool isL0Hit;
     bool isL1Hit;
-    bool isL2Hit;
     bool isMemHit;
     int fromLevel;      // which level is the origin of the data this packet carries
     bool isFinalPacket;   // is this packet confirmation that OblS finishes on all levels? (init to True)
@@ -663,13 +658,11 @@ class Packet : public Printable
     bool isSB_Hit()      const  { return isSBHit; }
     bool isL0_Hit()      const  { return isL0Hit; }
     bool isL1_Hit()      const  { return isL1Hit; }
-    bool isL2_Hit()      const  { return isL2Hit; }
     bool isMem_Hit()     const  { return isMemHit; }
 
     void setSB_Hit()        { isSBHit  = true; }
     void setL0_Hit()        { isL0Hit  = true; }
     void setL1_Hit()        { isL1Hit  = true; }
-    void setL2_Hit()        { isL2Hit  = true; }
     void setMem_Hit()       { isMemHit = true; }
 
     void setExternalEviction()
@@ -892,7 +885,7 @@ class Packet : public Printable
            _isSecure(false), size(0), headerDelay(0), snoopDelay(0),
            payloadDelay(0), srcIdx(-1), reqIdx(-1), isSplit(false),
            seqNum(0), isSBHit(false), isL0Hit(false), isL1Hit(false), isL2Hit(false), isMemHit(false), // Jiyong, MLDOM
-           fromLevel(-1), isFinalPacket(true), copyData(false), carryData(false), confirmPkt(nullptr), // Jiyong, MLDOM
+           fromLevel(-1), isFinalPacket(true), copyData(false), carryData(false), confirmPkt(nullptr),
            aliased_reqIdx(-1), notTakenByLoop(false), takenByLoop(false), // Jiyong, MLDOM
            senderState(NULL)
     {
@@ -917,7 +910,7 @@ class Packet : public Printable
            addr(0), _isSecure(false), headerDelay(0), snoopDelay(0),
            payloadDelay(0), srcIdx(-1), reqIdx(-1), isSplit(false),
            seqNum(0), isSBHit(false), isL0Hit(false), isL1Hit(false), isL2Hit(false), isMemHit(false), // Jiyong, MLDOM
-           fromLevel(-1), isFinalPacket(true), copyData(false), carryData(false), confirmPkt(nullptr), // Jiyong, MLDOM
+           fromLevel(-1), isFinalPacket(true), copyData(false), carryData(false), confirmPkt(nullptr),
            aliased_reqIdx(-1), notTakenByLoop(false), takenByLoop(false), // Jiyong, MLDOM
            senderState(NULL)
     {
@@ -952,7 +945,6 @@ class Packet : public Printable
            isSBHit(pkt->isSBHit),
            isL0Hit(pkt->isL0Hit),
            isL1Hit(pkt->isL1Hit),
-           isL2Hit(pkt->isL2Hit),
            isMemHit(pkt->isMemHit),
            fromLevel(pkt->fromLevel),   // Jiyong, MLDOM
            isFinalPacket(pkt->isFinalPacket),   // Jiyong, MLDOM
@@ -1075,12 +1067,6 @@ class Packet : public Printable
     createReadSpecL1(const RequestPtr req)
     {
         return new Packet(req, MemCmd::ReadSpecL1Req);
-    }
-
-    static PacketPtr
-    createReadSpecL2(const RequestPtr req)
-    {
-        return new Packet(req, MemCmd::ReadSpecL2Req);
     }
 
     static PacketPtr
