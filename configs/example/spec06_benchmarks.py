@@ -12,7 +12,7 @@ from m5.objects import *
 
 USE_PREFIX = False
 spec_prefix = ''
-x86_suffix = '_base.x86_64'
+x86_suffix = '_base.Xeon-gcc4.3'
 if USE_PREFIX:
     spec_prefix = '/shared/Jiyong/SPEC2006/benchspec/CPU2006/'
 

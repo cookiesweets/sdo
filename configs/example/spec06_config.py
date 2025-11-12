@@ -42,9 +42,6 @@
 #
 # "m5 test.py"
 
-from __future__ import print_function
-from __future__ import absolute_import
-
 import optparse
 import sys
 import os
@@ -63,11 +60,17 @@ from common import Simulation
 from common import CacheConfig
 from common import CpuConfig
 from common import MemConfig
-from common import ObjectList
 from common.Caches import *
 from common.cpu2000 import *
 
 import spec06_benchmarks
+
+# Check if KVM support has been enabled, we might need to do VM
+# configuration if that's the case.
+have_kvm_support = 'BaseKvmCPU' in globals()
+def is_kvm_cpu(cpu_class):
+    return have_kvm_support and cpu_class != None and \
+        issubclass(cpu_class, BaseKvmCPU)
 
 def get_processes(options):
     """Interprets provided options and returns a list of processes"""
@@ -320,7 +323,7 @@ if options.elastic_trace_en:
 for cpu in system.cpu:
     cpu.clk_domain = system.cpu_clk_domain
 
-if ObjectList.is_kvm_cpu(CPUClass) or ObjectList.is_kvm_cpu(FutureClass):
+if is_kvm_cpu(CPUClass) or is_kvm_cpu(FutureClass):
     if buildEnv['TARGET_ISA'] == 'x86':
         system.kvm_vm = KvmVM()
         for process in multiprocesses:
@@ -362,14 +365,6 @@ for i in xrange(np):
 
     if options.checker:
         system.cpu[i].addCheckerCpu()
-
-    if options.bp_type:
-        bpClass = ObjectList.bp_list.get(options.bp_type)
-        system.cpu[i].branchPred = bpClass()
-
-    if options.indirect_bp_type:
-        IndirectBPClass = ObjectList.indirect_bp_list.get(options.indirect_bp_type)
-        system.cpu[i].branchPred.indirectBranchPred = IndirectBPClass()
 
     system.cpu[i].createThreads()
 

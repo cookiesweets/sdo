@@ -42,9 +42,6 @@
 #
 # "m5 test.py"
 
-from __future__ import print_function
-from __future__ import absolute_import
-
 import optparse
 import sys
 import os
@@ -63,12 +60,18 @@ from common import Simulation
 from common import CacheConfig
 from common import CpuConfig
 from common import MemConfig
-from common import ObjectList
 from common.Caches import *
 from common.cpu2000 import *
+# from common import Scheme
 
 import spec17_benchmarks
 
+# Check if KVM support has been enabled, we might need to do VM
+# configuration if that's the case.
+have_kvm_support = 'BaseKvmCPU' in globals()
+def is_kvm_cpu(cpu_class):
+    return have_kvm_support and cpu_class != None and \
+        issubclass(cpu_class, BaseKvmCPU)
 
 def get_processes(options):
     """Interprets provided options and returns a list of processes"""
@@ -124,10 +127,12 @@ def get_processes(options):
 parser = optparse.OptionParser()
 Options.addCommonOptions(parser)
 Options.addSEOptions(parser)
+# Scheme.add_CC_Options(parser)
 
 parser.add_option("-b", "--benchmark", type="string", default="", help="The SPEC benchmark to be loaded.")
 parser.add_option("--benchmark_stdout", type="string", default="", help="Absolute path for stdout redirection for the benchmark.")
 parser.add_option("--benchmark_stderr", type="string", default="", help="Absolute path for stderr redirection for the benchmark.")
+
 
 if '--ruby' in sys.argv:
     Ruby.define_options(parser)
@@ -135,31 +140,191 @@ if '--ruby' in sys.argv:
 (options, args) = parser.parse_args()
 
 if args:
-    print(args)
-    print ("Error: script doesn't take any positional arguments")
+    print "Error: script doesn't take any positional arguments"
     sys.exit(1)
 
 #multiprocesses = []
 numThreads = 1
 
+# [CleanupCache] Based on scheme, set sim options.
+# Scheme.set_scheme_options(options)
+    
+# Select Benchmark
 if options.benchmark:
-    try:
-        print ('Selected SPEC_CPU2006 benchmark ->' + options.benchmark)
-        process = getattr(spec17_benchmarks, options.benchmark)
-    except AttributeError:
-        print ("No recognized SPEC2006 benchmark selected! Exiting.")
+    print 'Selected SPEC_CPU2017 benchmark'
+    if options.benchmark == 'perlbench':
+        print '--> perlbench'
+        process = spec17_benchmarks.perlbench
+    elif options.benchmark == 'gcc':
+        print '--> gcc'
+        process = spec17_benchmarks.gcc
+    elif options.benchmark == 'bwaves':
+        print '--> bwaves'
+        process = spec17_benchmarks.bwaves
+    elif options.benchmark == 'mcf':
+        print '--> mcf'
+        process = spec17_benchmarks.mcf
+    elif options.benchmark == 'cactuBSSN':
+        print '--> cactuBSSN'
+        process = spec17_benchmarks.cactuBSSN
+    elif options.benchmark == 'namd':
+        print '--> namd'
+        process = spec17_benchmarks.namd
+    elif options.benchmark == 'parest':
+        print '--> parest'
+        process = spec17_benchmarks.parest
+    elif options.benchmark == 'povray':
+        print '--> povray'
+        process = spec17_benchmarks.povray
+    elif options.benchmark == 'lbm':
+        print '--> lbm'
+        process = spec17_benchmarks.lbm
+    elif options.benchmark == 'omnetpp':
+        print '--> omnetpp'
+        process = spec17_benchmarks.omnetpp
+    elif options.benchmark == 'wrf':
+        print '--> wrf'
+        process = spec17_benchmarks.wrf
+    elif options.benchmark == 'xalancbmk':
+        print '--> xalancbmk'
+        process = spec17_benchmarks.xalancbmk
+    elif options.benchmark == 'x264':
+        print '--> x264'
+        process = spec17_benchmarks.x264
+    elif options.benchmark == 'blender':
+        print '--> blender'
+        process = spec17_benchmarks.blender
+    elif options.benchmark == 'cam4':
+        print '--> cam4'
+        process = spec17_benchmarks.cam4
+    elif options.benchmark == 'deepsjeng':
+        print '--> deepsjeng'
+        process = spec17_benchmarks.deepsjeng
+    elif options.benchmark == 'imagick':
+        print '--> imagick'
+        process = spec17_benchmarks.imagick
+    elif options.benchmark == 'leela':
+        print '--> leela'
+        process = spec17_benchmarks.leela
+    elif options.benchmark == 'nab':
+        print '--> nab'
+        process = spec17_benchmarks.nab
+    elif options.benchmark == 'fotonik3d':
+        print '--> fotonik3d'
+        process = spec17_benchmarks.fotonik3d
+    elif options.benchmark == 'roms':
+        print '--> roms'
+        process = spec17_benchmarks.roms
+    elif options.benchmark == 'xz':
+        print '--> xz'
+        process = spec17_benchmarks.xz
+    # if options.benchmark == 'perlbench':
+    #     print '--> perlbench'
+    #     process = spec17_benchmarks.perlbench
+    # elif options.benchmark == 'bzip2':
+    #     print '--> bzip2'
+    #     process = spec17_benchmarks.bzip2
+    # elif options.benchmark == 'gcc':
+    #     print '--> gcc'
+    #     process = spec17_benchmarks.gcc
+    # elif options.benchmark == 'bwaves':
+    #     print '--> bwaves'
+    #     process = spec17_benchmarks.bwaves
+    # elif options.benchmark == 'gamess':
+    #     print '--> gamess'
+    #     process = spec17_benchmarks.gamess
+    # elif options.benchmark == 'mcf':
+    #     print '--> mcf'
+    #     process = spec17_benchmarks.mcf
+    # elif options.benchmark == 'milc':
+    #     print '--> milc'
+    #     process = spec17_benchmarks.milc
+    # elif options.benchmark == 'zeusmp':
+    #     print '--> zeusmp'
+    #     process = spec17_benchmarks.zeusmp
+    # elif options.benchmark == 'gromacs':
+    #     print '--> gromacs'
+    #     process = spec17_benchmarks.gromacs
+    # elif options.benchmark == 'cactusADM':
+    #     print '--> cactusADM'
+    #     process = spec17_benchmarks.cactusADM
+    # elif options.benchmark == 'leslie3d':
+    #     print '--> leslie3d'
+    #     process = spec17_benchmarks.leslie3d
+    # elif options.benchmark == 'namd':
+    #     print '--> namd'
+    #     process = spec17_benchmarks.namd
+    # elif options.benchmark == 'gobmk':
+    #     print '--> gobmk'
+    #     process = spec17_benchmarks.gobmk
+    # elif options.benchmark == 'dealII':
+    #     print '--> dealII'
+    #     process = spec17_benchmarks.dealII
+    # elif options.benchmark == 'soplex':
+    #     print '--> soplex'
+    #     process = spec17_benchmarks.soplex
+    # elif options.benchmark == 'povray':
+    #     print '--> povray'
+    #     process = spec17_benchmarks.povray
+    # elif options.benchmark == 'calculix':
+    #     print '--> calculix'
+    #     process = spec17_benchmarks.calculix
+    # elif options.benchmark == 'hmmer':
+    #     print '--> hmmer'
+    #     process = spec17_benchmarks.hmmer
+    # elif options.benchmark == 'sjeng':
+    #     print '--> sjeng'
+    #     process = spec17_benchmarks.sjeng
+    # elif options.benchmark == 'GemsFDTD':
+    #     print '--> GemsFDTD'
+    #     process = spec17_benchmarks.GemsFDTD
+    # elif options.benchmark == 'libquantum':
+    #     print '--> libquantum'
+    #     process = spec17_benchmarks.libquantum
+    # elif options.benchmark == 'h264ref':
+    #     print '--> h264ref'
+    #     process = spec17_benchmarks.h264ref
+    # elif options.benchmark == 'tonto':
+    #     print '--> tonto'
+    #     process = spec17_benchmarks.tonto
+    # elif options.benchmark == 'lbm':
+    #     print '--> lbm'
+    #     process = spec17_benchmarks.lbm
+    # elif options.benchmark == 'omnetpp':
+    #     print '--> omnetpp'
+    #     process = spec17_benchmarks.omnetpp
+    # elif options.benchmark == 'astar':
+    #     print '--> astar'
+    #     process = spec17_benchmarks.astar
+    # elif options.benchmark == 'wrf':
+    #     print '--> wrf'
+    #     process = spec17_benchmarks.wrf
+    # elif options.benchmark == 'sphinx3':
+    #     print '--> sphinx3'
+    #     process = spec17_benchmarks.sphinx3
+    # elif options.benchmark == 'xalancbmk':
+    #     print '--> xalancbmk'
+    #     process = spec17_benchmarks.xalancbmk
+    # elif options.benchmark == 'specrand_i':
+    #     print '--> specrand_i'
+    #     process = spec17_benchmarks.specrand_i
+    # elif options.benchmark == 'specrand_f':
+    #     print '--> specrand_f'
+    #     process = spec17_benchmarks.specrand_f
+    else:
+        print "No recognized SPEC2017 benchmark selected! Exiting."
         sys.exit(1)
 else:
-    print >> sys.stderr, "Need --benchmark switch to specify SPEC CPU2006 workload. Exiting!\n"
+    print >> sys.stderr, "Need --benchmark switch to specify SPEC CPU2017 workload. Exiting!\n"
     sys.exit(1)
 
 # Set process stdout/stderr
 if options.benchmark_stdout:
     process.output = options.benchmark_stdout
-    print ("Process stdout file: " + process.output)
+    print "Process stdout file: " + process.output
 if options.benchmark_stderr:
     process.errout = options.benchmark_stderr
-    print ("Process stderr file: " + process.errout)
+    print "Process stderr file: " + process.errout
 
 #if options.bench:
 #    apps = options.bench.split("-")
@@ -202,7 +367,6 @@ system = System(cpu = [CPUClass(cpu_id=i) for i in xrange(np)],
                 mem_mode = test_mem_mode,
                 mem_ranges = [AddrRange(options.mem_size)],
                 cache_line_size = options.cacheline_size)
-
 if numThreads > 1:
     system.multi_thread = True
 
@@ -231,7 +395,7 @@ if options.elastic_trace_en:
 for cpu in system.cpu:
     cpu.clk_domain = system.cpu_clk_domain
 
-if ObjectList.is_kvm_cpu(CPUClass) or ObjectList.is_kvm_cpu(FutureClass):
+if is_kvm_cpu(CPUClass) or is_kvm_cpu(FutureClass):
     if buildEnv['TARGET_ISA'] == 'x86':
         system.kvm_vm = KvmVM()
         for process in multiprocesses:
@@ -256,7 +420,7 @@ if options.simpoint_profile:
 
 for i in xrange(np):
     system.cpu[i].workload = process
-    print (process.cmd)
+    print process.cmd
 
     #if options.smt:
     #    system.cpu[i].workload = multiprocesses
@@ -274,15 +438,8 @@ for i in xrange(np):
     if options.checker:
         system.cpu[i].addCheckerCpu()
 
-    if options.bp_type:
-        bpClass = ObjectList.bp_list.get(options.bp_type)
-        system.cpu[i].branchPred = bpClass()
-
-    if options.indirect_bp_type:
-        IndirectBPClass = ObjectList.indirect_bp_list.get(options.indirect_bp_type)
-        system.cpu[i].branchPred.indirectBranchPred = IndirectBPClass()
-
     system.cpu[i].createThreads()
+
 
 if options.ruby:
     Ruby.create_system(options, False, system)
@@ -314,7 +471,7 @@ else:
     CacheConfig.config_cache(options, system)
     MemConfig.config_mem(options, system)
 
-# [InvisiSpec] Configure simulation scheme
+#  Configure simulation scheme
 if CPUClass == DerivO3CPU:
     CpuConfig.config_scheme(CPUClass, system.cpu, options)
 
