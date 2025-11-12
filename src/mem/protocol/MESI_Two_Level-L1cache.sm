@@ -1095,11 +1095,11 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   // Jiyong, MLDOM: pop spec data response
-  action(osd_popIncomingSpecDataResponseQueue, "osd",
-         desc="Pop Incoming spec data Response queue and profile the delay within this virtual network") {
-    Tick delay := messgeBuffer_specData_in.dequeue(clockEdge());
-    profileMsgDelay(1, ticksToCycles(delay));
-  }
+  // action(osd_popIncomingSpecDataResponseQueue, "osd",
+  //        desc="Pop Incoming spec data Response queue and profile the delay within this virtual network") {
+  //   Tick delay := messgeBuffer_specData_in.dequeue(clockEdge());
+  //   profileMsgDelay(1, ticksToCycles(delay));
+  // }
 
   action(s_deallocateTBE, "s", desc="Deallocate TBE") {
     TBEs.deallocate(address);
