@@ -136,7 +136,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
         DPRINTF(JY, "a validate packet for [sn:%lli]\n", pkt->seqNum);
 
     DPRINTF(JY, "recv a Packet [sn:%lli] with HitSB = %d, HitL0 = %d, HitL1 = %d, HitL2 = %d, HitMem = %d\n", 
-            pkt->seqNum, pkt->isSB_Hit(), pkt->isL0_Hit(), pkt->isL1_Hit(), , pkt->isMem_Hit());
+            pkt->seqNum, pkt->isSB_Hit(), pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isMem_Hit());
 
     // Jiyong, set up cache hit status
     if (inst->isLoad() && !inst->needPostFetch()) {   // pkt is a non-spec load
