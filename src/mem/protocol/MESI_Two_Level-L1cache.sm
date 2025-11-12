@@ -614,7 +614,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   action(ij_issueGETSPEC_L1_pass_L0, '1p0', desc="Issue SpecLoad L1 to lower levels given it hits/misses L0") {
     peek(mandatoryQueue_in, RubyRequest) {
-      enqueue(requestNetwork_out, RequestMsg, request_latency) {
+      enqueue(requestL1Network_out, RequestMsg, l1_request_latency) {
         out_msg.addr := address;
         out_msg.Type := CoherenceRequestType:GETSPEC_L2;
         out_msg.Requestor := machineID;
