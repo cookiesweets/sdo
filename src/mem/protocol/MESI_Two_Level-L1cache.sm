@@ -617,7 +617,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       enqueue(requestNetwork_out, RequestMsg, request_latency) {
         out_msg.addr := address;
         out_msg.Type := CoherenceRequestType:GETSPEC_L2;
-        out_msg.Requester := machineID;
+        out_msg.Requestor := machineID;
         out_msg.Destination.add(mapAddressToRange(address, MachineType:L2Cache,
                           l2_select_low_bit, l2_select_num_bits, intToID(0)));
         DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
