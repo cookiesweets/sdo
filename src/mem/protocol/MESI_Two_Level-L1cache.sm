@@ -1374,19 +1374,19 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     z_stallAndWaitMandatoryQueue;
   }
 
-  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_L0}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_L0}) {
     mj_spec_load_miss_l0;
     k_popMandatoryQueue;
   }
 
-  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_L1}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_L1}) {
     mj_spec_load_miss_l0;
     // send a request to L1
     ij_issueGETSPEC_L1_pass_L0;
     k_popMandatoryQueue;
   }
 
-  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_Mem}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_Mem}) {
     mj_spec_load_miss_l0;
     // send a request to L1
     ij_issueGETSPEC_Mem_pass_L0;
@@ -1443,11 +1443,11 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     k_popMandatoryQueue;
   }
 
-  transition({NP,I}, SpecLoad_L0, IX) {
-    iw_allocateTBEWithoutCacheEntry;
-    as_issueGETSPEC;
-    k_popMandatoryQueue;
-  }
+  // transition({NP,I}, SpecLoad_L0, IX) {
+  //   iw_allocateTBEWithoutCacheEntry;
+  //   as_issueGETSPEC;
+  //   k_popMandatoryQueue;
+  // }
 
   transition({NP,I}, PF_Load, PF_IS) {
     oo_allocateL1DCacheBlock;
