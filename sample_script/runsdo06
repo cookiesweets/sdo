@@ -11,6 +11,7 @@
 # SCHEME_CLEANUPSPEC: Scheme name to simulate (see README or configs/common/Scheme.py for supported list)
 # MAX_INSTS: Number of instructions to simulate
 # SCRIPT_OUT: Log file
+
 #$GEM5_PATH/build/X86_MESI_Two_Level/gem5.opt \
 #    --outdir=$OUTPUT_DIR $GEM5_PATH/configs/example/spec06_config.py \
 #    --benchmark=$BENCHMARK --benchmark_stdout=$OUTPUT_DIR/$BENCHMARK.out \
