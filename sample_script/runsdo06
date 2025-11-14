@@ -238,7 +238,7 @@ echo "checkpoint directory: " $CKPT_OUT_DIR
 
 # Output Dir
 # OUTPUT_DIR=$GEM5_PATH/output/$CHECKPOINT_CONFIG.MESI/$RUN_CONFIG/${CONFIG_SPARESPEC}/$BENCHMARK
-OUTPUT_DIR=$GEM5_PATH/output/$CHECKPOINT_CONFIG.MESI/$RUN_CONFIG/STT/$BENCHMARK/${THREAT_MODEL}/STT${STT}_Impl${IMPLICIT_CHANNEL}
+OUTPUT_DIR=$GEM5_PATH/output/$CHECKPOINT_CONFIG.MESI/$RUN_CONFIG/SDO/$BENCHMARK/${THREAT_MODEL}/SDO${STT}_Impl${IMPLICIT_CHANNEL}
 
 echo "output directory: " $OUTPUT_DIR
 if [ -d "$OUTPUT_DIR" ]
@@ -288,14 +288,15 @@ $GEM5_PATH/build/X86_MESI_Two_Level/gem5.opt \
     --outdir=$OUTPUT_DIR $GEM5_PATH/configs/example/spec06_config.py \
     --benchmark=$BENCHMARK --benchmark_stdout=$OUTPUT_DIR/$BENCHMARK.out \
     --benchmark_stderr=$OUTPUT_DIR/$BENCHMARK.err \
-    --num-cpus=1 --mem-size=8GB \
+    --num-cpus=1 --mem-size=8GB --num-l2caches=1 \
     --checkpoint-dir=$CKPT_OUT_DIR \
     --checkpoint-restore=$INST_TAKE_CHECKPOINT --at-instruction \
     --l1d_assoc=8 --l2_assoc=16 --l1i_assoc=4 \
     --cpu-type=DerivO3CPU --needsTSO=0 \
     --num-dirs=1 --ruby --maxinsts=$MAX_INSTS  \
     --network=simple --topology=Mesh_XY --mesh-rows=1 \
-    --threat_model=$THREAT_MODEL --STT=$STT --implicit_channel=$IMPLICIT_CHANNEL \
+    --scheme=SDO --mem_model=TSO \
+    --threat_model=$THREAT_MODEL --STT=$STT --impChannel=$IMPLICIT_CHANNEL \
     --ifPrintROB=0 \
     --pred_type=tournament_2way \
     --subpred1_type=greedy --subpred2_type=loop \
