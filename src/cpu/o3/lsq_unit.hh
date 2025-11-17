@@ -873,7 +873,7 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
                 // for now.
                 // @todo: Need to make this a parameter.
                 //cpu->schedule(wb, curTick());
-                load_inst->alreadyForwarded = true;
+                // load_inst->alreadyForwarded = true;
 
                 break;
                 // Don't need to do anything special for split loads.
