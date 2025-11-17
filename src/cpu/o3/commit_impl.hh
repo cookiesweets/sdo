@@ -1679,21 +1679,21 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
             if (head_inst->srcRegIdx(i).isFloatReg()) {
                 if (cpu->checkFPSubnormal(head_inst->renamedSrcRegIdx(i))) {
                     num_subnormal_fpop++;
-                    printf("pc: %lx, inst:%s, ", head_inst->pcState().instAddr(), head_inst->staticInst->disassemble(head_inst->instAddr()).c_str());
-                    printf("sn:%ld, inst=%s ", head_inst->seqNum, head_inst->staticInst->getName().c_str());
-                    for (int j = 0; j < head_inst->numDestRegs(); j++)
-                        printf("%d(%s), ", head_inst->destRegIdx(j).index(), head_inst->destRegIdx(j).className());
-                    printf("| ");
-                    for (int j = 0; j < head_inst->numSrcRegs(); j++)
-                        printf("%d(%s), ", head_inst->srcRegIdx(j).index(), head_inst->srcRegIdx(j).className());
-                    printf("| ");
+                    // printf("pc: %lx, inst:%s, ", head_inst->pcState().instAddr(), head_inst->staticInst->disassemble(head_inst->instAddr()).c_str());
+                    // printf("sn:%ld, inst=%s ", head_inst->seqNum, head_inst->staticInst->getName().c_str());
+                    // for (int j = 0; j < head_inst->numDestRegs(); j++)
+                    //     printf("%d(%s), ", head_inst->destRegIdx(j).index(), head_inst->destRegIdx(j).className());
+                    // printf("| ");
+                    // for (int j = 0; j < head_inst->numSrcRegs(); j++)
+                    //     printf("%d(%s), ", head_inst->srcRegIdx(j).index(), head_inst->srcRegIdx(j).className());
+                    // printf("| ");
 
-                    for (int j = 0; j < head_inst->numDestRegs(); j++)
-                        printf("destPhys[%d] = %d(%d), ", j, head_inst->renamedDestRegIdx(j)->index(), head_inst->renamedDestRegIdx(j)->flatIndex());
-                    for (int j = 0; j < head_inst->numSrcRegs(); j++)
-                        printf("srcPhys[%d] = %d(%d), ", j, head_inst->renamedSrcRegIdx(j)->index(), head_inst->renamedSrcRegIdx(j)->flatIndex());
+                    // for (int j = 0; j < head_inst->numDestRegs(); j++)
+                    //     printf("destPhys[%d] = %d(%d), ", j, head_inst->renamedDestRegIdx(j)->index(), head_inst->renamedDestRegIdx(j)->flatIndex());
+                    // for (int j = 0; j < head_inst->numSrcRegs(); j++)
+                    //     printf("srcPhys[%d] = %d(%d), ", j, head_inst->renamedSrcRegIdx(j)->index(), head_inst->renamedSrcRegIdx(j)->flatIndex());
 
-                    printf("src idx %d is subnormal\n", i);
+                    // printf("src idx %d is subnormal\n", i);
                 }
             }
         }
@@ -1726,7 +1726,7 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
     }
 
     /*** Jiyong: print average memory latency ***/
-    cpu->print_average_access_latency(numCommittedInst);
+    // cpu->print_average_access_latency(numCommittedInst);
     DPRINTF(JY, "print avg latency done \n");
 
     /*** Jiyong, MLDOM: do commit() for the location predictor ***/

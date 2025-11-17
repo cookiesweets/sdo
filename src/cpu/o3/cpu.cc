@@ -1677,7 +1677,7 @@ template <class Impl>
 bool
 FullO3CPU<Impl>::checkFPSubnormal(PhysRegIdPtr phys_reg)
 {
-    if (!phys_reg->isFloatPhysReg())
+    if (!phys_reg->isFloatPhysReg())f
         return false;
 
     if (phys_reg->isZeroReg()) {
@@ -1688,8 +1688,8 @@ FullO3CPU<Impl>::checkFPSubnormal(PhysRegIdPtr phys_reg)
         FloatRegBits val_b = regFile.readFloatRegBits(phys_reg);
         switch (fpclassify(f_val)) {
             case FP_SUBNORMAL:
-                printf("subnormal value: %lf\n", f_val);
-                printf("subnormal bits: %lx\n", val_b);
+                // printf("subnormal value: %lf\n", f_val);
+                // printf("subnormal bits: %lx\n", val_b);
                 return true;
             default:
                 return false;
