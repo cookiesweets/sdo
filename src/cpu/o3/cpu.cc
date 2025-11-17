@@ -1684,7 +1684,7 @@ FullO3CPU<Impl>::checkFPSubnormal(PhysRegIdPtr phys_reg)
         return false;
     }
     else {
-        // FloatReg f_val = regFile.readFloatReg(phys_reg);
+        FloatReg f_val = regFile.readFloatReg(phys_reg);
         // FloatRegBits val_b = regFile.readFloatRegBits(phys_reg);
         switch (fpclassify(f_val)) {
             case FP_SUBNORMAL:
