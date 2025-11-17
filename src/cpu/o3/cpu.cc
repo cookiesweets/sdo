@@ -1677,7 +1677,7 @@ template <class Impl>
 bool
 FullO3CPU<Impl>::checkFPSubnormal(PhysRegIdPtr phys_reg)
 {
-    if (!phys_reg->isFloatPhysReg())f
+    if (!phys_reg->isFloatPhysReg())
         return false;
 
     if (phys_reg->isZeroReg()) {
