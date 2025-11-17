@@ -841,42 +841,89 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
         // If the store's data has all of the data needed and the load isn't
         // LLSC, we can forward.
         if (store_has_lower_limit && store_has_upper_limit && !req->isLLSC()) {
-            int shift_amt = req->getVaddr() - storeQueue[store_idx].inst->effAddr;
+            if (cpu->STT && cpu->impChannel && (storeQueue[store_idx].inst->isAddrTainted() && !load_inst->isAddrTainted())) {
+                /*
+                 * here we do ld-st forwarding. But since store address is tainted, we also launch normal load afterwards
+                 */
+                // Get shift amount for offset into the store's data.
+                int shift_amt = req->getVaddr() - storeQueue[store_idx].inst->effAddr;
 
-            // Allocate memory if this is the first time a load is issued.
-            if (!load_inst->memData) {
-                load_inst->memData = new uint8_t[req->getSize()];
+                // Allocate memory if this is the first time a load is issued.
+                if (!load_inst->stFwdData) {
+                    load_inst->stFwdData = new uint8_t[req->getSize()];
+                    load_inst->stFwdDataSize = req->getSize();
+                }
+                if (storeQueue[store_idx].isAllZeros)
+                    memset(load_inst->stFwdData, 0, req->getSize());
+                else
+                    memcpy(load_inst->stFwdData,
+                        storeQueue[store_idx].data + shift_amt, req->getSize());
+
+                DPRINTF(LSQUnit, "Forwarding from store idx %i to load to "
+                        "addr %#x\n", store_idx, req->getVaddr());
+                DPRINTF(LSQUnit, "Still need dummy load to hide tainted address of store");
+
+                // Jiyong, STT: writeback is deferred to GETS writeback
+                //PacketPtr data_pkt = std::make_shared<Packet>(req, MemCmd::ReadReq);
+                //data_pkt->dataStatic(load_inst->stFwdData);
+
+                //WritebackEvent *wb = new WritebackEvent(load_inst, data_pkt, this);
+
+                // We'll say this has a 1 cycle load-store forwarding latency
+                // for now.
+                // @todo: Need to make this a parameter.
+                //cpu->schedule(wb, curTick());
+                load_inst->alreadyForwarded = true;
+
+                break;
+                // Don't need to do anything special for split loads.
+                //if (TheISA::HasUnalignedMemAcc && sreqLow) {
+                    //delete sreqLow;
+                    //delete sreqHigh;
+                //}
+
+                //return NoFault;
+
             }
-            if (storeQueue[store_idx].isAllZeros)
-                memset(load_inst->memData, 0, req->getSize());
-            else
-                memcpy(load_inst->memData,
-                    storeQueue[store_idx].data + shift_amt, req->getSize());
+            else{
+                int shift_amt = req->getVaddr() - storeQueue[store_idx].inst->effAddr;
+    
+                // Allocate memory if this is the first time a load is issued.
+                if (!load_inst->memData) {
+                    load_inst->memData = new uint8_t[req->getSize()];
+                }
+                if (storeQueue[store_idx].isAllZeros)
+                    memset(load_inst->memData, 0, req->getSize());
+                else
+                    memcpy(load_inst->memData,
+                        storeQueue[store_idx].data + shift_amt, req->getSize());
+    
+                PacketPtr data_pkt = new Packet(req, MemCmd::ReadReq);
+                data_pkt->dataStatic(load_inst->memData);
+    
+                WritebackEvent *wb = new WritebackEvent(load_inst, data_pkt, this);
+    
+                DPRINTF(LSQUnit, "Forwarding from store idx %i to load[sn:%lli] with address %#x\n", 
+                        store_idx, load_inst->seqNum, req->getVaddr());
+    
+                // We'll say this has a 1 cycle load-store forwarding latency
+                // for now.
+                // @todo: Need to make this a parameter.
+                cpu->schedule(wb, curTick());
+                ++lsqForwLoads;
+                load_inst->if_ldStFwd = true;
+    
+                //load_inst->alreadyForwarded = true;
+                //break;
+                // Don't need to do anything special for split loads.
+                if (TheISA::HasUnalignedMemAcc && sreqLow) {
+                    delete sreqLow;
+                    delete sreqHigh;
+                }
+    
+                return NoFault;
 
-            PacketPtr data_pkt = new Packet(req, MemCmd::ReadReq);
-            data_pkt->dataStatic(load_inst->memData);
-
-            WritebackEvent *wb = new WritebackEvent(load_inst, data_pkt, this);
-
-            DPRINTF(LSQUnit, "Forwarding from store idx %i to load[sn:%lli] with address %#x\n", 
-                    store_idx, load_inst->seqNum, req->getVaddr());
-
-            // We'll say this has a 1 cycle load-store forwarding latency
-            // for now.
-            // @todo: Need to make this a parameter.
-            cpu->schedule(wb, curTick());
-            ++lsqForwLoads;
-            load_inst->if_ldStFwd = true;
-
-            //load_inst->alreadyForwarded = true;
-            //break;
-            // Don't need to do anything special for split loads.
-            if (TheISA::HasUnalignedMemAcc && sreqLow) {
-                delete sreqLow;
-                delete sreqHigh;
             }
-
-            return NoFault;
 
         } else if (
                 (!req->isLLSC() &&
