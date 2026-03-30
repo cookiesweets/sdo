@@ -115,9 +115,15 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     SpecLoad,        desc="SpecLoad request from the home processor";
     Expose,          desc="Expose request from the home processor";
 
-    SpecLoad_L0,            desc="Specload request from home processor, all the way till L1";
-    SpecLoad_L1,            desc="Specload request from home processor, all the way till L2";
-    SpecLoad_Mem,           desc="Specload request from home processor, all the way till Memory";
+    // In MESI_Two_Level there is no separate Ruby-visible L0 cache.
+    // We keep the SPEC_LD_L0 / SPEC_LD_L1 request names because they are
+    // part of the global MLDOM request interface, but locally they map to:
+    //   - SpecLoad_L0: this private cache (first visible cache level)
+    //   - SpecLoad_L1: the shared lower cache (Ruby L2 / external L1)
+    //   - SpecLoad_Mem: memory behind the shared lower cache
+    SpecLoad_L0,            desc="SpecLoad request checked at this private cache";
+    SpecLoad_L1,            desc="SpecLoad request forwarded to the shared lower cache";
+    SpecLoad_Mem,           desc="SpecLoad request forwarded through the shared lower cache to Memory";
     SpecLoad_Perfect,       desc="Specload request from home processor, perfectly hit the location";
     SpecLoad_PerfectUnsafe, desc="Specload request from home processor, perfectly hit the location(unsafe version)";
 
@@ -138,8 +144,11 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     DataS_fromL1,       desc="data for GETS request, need to unblock directory";
     Data_all_Acks,       desc="Data for processor, all acks";
     // Jiyong, MLDOM
-    Data_Spec_fromL1,   desc="Spec data for processor sent from L1";
-    Data_Spec_fromL2,   desc="Spec data for processor sent from L2";
+    // Data_Spec_fromL1 is the exported response for the shared lower cache in
+    // MESI_Two_Level. Data_Spec_fromL2 is kept only for compatibility with
+    // shared message definitions and is not used by this protocol.
+    Data_Spec_fromL1,   desc="Spec data for processor sent from the exported lower cache level";
+    Data_Spec_fromL2,   desc="Unused in MESI_Two_Level";
     Data_Spec_fromMem,  desc="Spec data for processor sent from Mem";
 
     Ack,        desc="Ack for processor";
@@ -1151,8 +1160,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     }
   }
 
-  // Jiyong, MLDOM: send the spec data from L1 up to the core
-  action(hxj_send_spec_data_from_l1_to_cpu, "df1", desc="Send spec data from L1 up to the core. Notify sequencer the load returns.") {
+  // In MESI_Two_Level this action consumes the exported lower-cache response.
+  // The producer is the shared Ruby L2 cache, but it is intentionally exposed
+  // to the sequencer as the external L1/LLC response.
+  action(hxj_send_spec_data_from_l1_to_cpu, "df1", desc="Send spec data from the exported lower cache level up to the core") {
     peek(responseL1Network_in, ResponseMsg) {
       DPRINTF(JY_Ruby, "send the spec data from L1 upto the core: address: %#x, idx: %d ; call readCallback_fromL1\n", address, in_msg.idx);
       DataBlock dataBlk_L1  := in_msg.DataBlk_L1;

@@ -640,8 +640,10 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
     }
   }
 
-  // Jiyong: copy d_sendDataToRequestor with hit Status set to L2
-  action(d_sendDataToRequestor_Hit, "dht", desc="Send data from cache to reqeustor, hit in L2") {
+  // In MESI_Two_Level this shared Ruby L2 cache is the externally visible
+  // lower cache level. Export its hit status as hitAtL1 to keep the
+  // CPU/sequencer interface consistent with the two-level hierarchy.
+  action(d_sendDataToRequestor_Hit, "dht", desc="Send data from cache to requestor, exported lower-cache hit") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
@@ -658,8 +660,8 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         }
         out_msg.hitAtL0   := in_msg.hitAtL0;
         // out_msg.hitAtL1   := in_msg.hitAtL1;
-        out_msg.hitAtL1   := true; // Jiyong: hit at L2
-        DPRINTF(JY_Ruby, "address: %#x hits in L2\n", address);
+        out_msg.hitAtL1   := true;
+        DPRINTF(JY_Ruby, "address: %#x hits in the shared lower cache (exported as L1)\n", address);
       }
     }
   }
@@ -683,8 +685,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
     }
   }
 
-  // Jiyong: copy dd_sendExclusiveDataToRequestor, with Hit Status set to L2
-  action(dd_sendExclusiveDataToRequestor_Hit, "ddht", desc="Send data from cache to reqeustor, hit in L2") {
+  action(dd_sendExclusiveDataToRequestor_Hit, "ddht", desc="Send data from cache to requestor, exported lower-cache exclusive hit") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
@@ -699,8 +700,8 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         if (cache_entry.Sharers.isElement(in_msg.Requestor)) {
           out_msg.AckCount := out_msg.AckCount + 1;
         }
-        out_msg.hitAtL1 := true;    // Jiyong: hit in L2, pass to L1
-        DPRINTF(JY_Ruby, "address: %#x hits in L2\n", address);
+        out_msg.hitAtL1 := true;
+        DPRINTF(JY_Ruby, "address: %#x hits in the shared lower cache (exported as L1)\n", address);
       }
     }
   }
@@ -739,8 +740,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
     }
   }
 
-  // Jiyong: copy ds_sendSharedDataToRequestor with hit Status set to L2
-  action(ds_sendSharedDataToRequestor_Hit, "dsht", desc="Send data from cache to reqeustor, hit in L2") {
+  action(ds_sendSharedDataToRequestor_Hit, "dsht", desc="Send data from cache to requestor, exported lower-cache shared hit") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
@@ -751,14 +751,16 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         out_msg.DataBlk := cache_entry.DataBlk;
         out_msg.MessageSize := MessageSizeType:Response_Data;
         out_msg.AckCount := 0;
-        out_msg.hitAtL1 := true;    // Jiyong: hit in L2, pass to L1
-        DPRINTF(JY_Ruby, "address: %#x hits in L2\n", address);
+        out_msg.hitAtL1 := true;
+        DPRINTF(JY_Ruby, "address: %#x hits in the shared lower cache (exported as L1)\n", address);
       }
     }
   }
 
-  // Jiyong, MLDOM: SpecLD (L2 or Mem) hit L2, send the response up
-  action(hj_spec_load_hit_l2, "h2", desc="Spec load LX hits L2. send data to the L1 requestor") {
+  // The shared Ruby L2 is exported as the lower cache level (external L1) in
+  // MESI_Two_Level. Populate the exported L1 fields so the private cache and
+  // sequencer do not consume an uninitialized DataBlk_L1 payload.
+  action(hj_spec_load_hit_l2, "h2", desc="Spec load hits in the shared lower cache and returns exported lower-cache data") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
@@ -769,17 +771,17 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         out_msg.DataBlk := cache_entry.DataBlk;
         out_msg.MessageSize := MessageSizeType:SPECLD_L1_Data;
         out_msg.AckCount := 0;
+        out_msg.DataBlk_L1 := cache_entry.DataBlk;
         out_msg.DataBlk_L2 := cache_entry.DataBlk;
-        out_msg.hitAtL1    := true;    // Jiyong, MLDOM: hit in L2, pass to L1
+        out_msg.hitAtL1    := true;
         out_msg.idx        := in_msg.idx;
 
-        DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=2) hits in L2: address: %#x, idx: %d ; send the response up\n", address, out_msg.idx);
+        DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=1) hits in the shared lower cache: address: %#x, idx: %d ; send the response up\n", address, out_msg.idx);
       }
     }
   }
 
-  // Jiyong, MLDOM: SpecLD (L2 or Mem) miss L2, send the dummy response up
-  action(mj_spec_load_miss_l2, "m2", desc="Spec load LX misses L2. send miss to the L1 requestor") {
+  action(mj_spec_load_miss_l2, "m2", desc="Spec load misses in the shared lower cache and returns exported lower-cache miss") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         out_msg.addr := address;
@@ -789,11 +791,12 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         out_msg.DataBlk := default_block;  // don't copy the data
         out_msg.MessageSize := MessageSizeType:SPECLD_L1_Data;
         out_msg.AckCount := 0;
-        out_msg.DataBlk_L2 := default_block;  // don't copy the data
-        out_msg.hitAtL1    := false;    // Jiyong, MLDOM: miss in L2, pass to L1
+        out_msg.DataBlk_L1 := default_block;
+        out_msg.DataBlk_L2 := default_block;
+        out_msg.hitAtL1    := false;
         out_msg.idx        := in_msg.idx;
 
-        DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=2) misses in L2: address: %#x, idx: %d ; send the response up\n", address, out_msg.idx);
+        DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=1) misses in the shared lower cache: address: %#x, idx: %d ; send the response up\n", address, out_msg.idx);
       }
     }
   }
