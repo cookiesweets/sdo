@@ -970,6 +970,19 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
         LocPred_t chosen_pred;
         load_inst->pred_level = cpu->locationPredictor->predict(load_inst->pcState().instAddr(), load_inst->seqNum, chosen_pred);
         load_inst->chosen_pred_type = chosen_pred;
+
+        // The active SDO packet interface exposes only private-cache,
+        // shared-lower-cache, and memory targets. Keep the old Three-Level
+        // enum value so the predictor code remains intact, but fold its LLC
+        // prediction onto the shared lower cache before issuing packets in
+        // MESI_Two_Level. The commented SPEC_LD_L2 path below preserves the
+        // original Three-Level implementation for reference.
+        if (load_inst->pred_level == Cache_L3) {
+            DPRINTF(JY_SDO_Pred,
+                    "<Predict> fold Cache_L3 onto Cache_L2 for load PC:%s, [sn:%lli]\n",
+                    load_inst->pcState(), load_inst->seqNum);
+            load_inst->pred_level = Cache_L2;
+        }
     }
 
     /* solution 1: stall the load */
@@ -1388,6 +1401,8 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
         else
             DPRINTF(JY, "A load [sn:%lli] just issued a SpecLD (1 packet), now in state A\n", load_inst->seqNum);
 
+        // Cache_L3 accounting is kept for the preserved Three-Level path,
+        // but MESI_Two_Level folds that prediction onto Cache_L2 above.
         if (load_inst->pred_level == Cache_L1)
             numSpecLdL0Sent++;
         else if (load_inst->pred_level == Cache_L2)

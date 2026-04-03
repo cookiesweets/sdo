@@ -1287,7 +1287,7 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
             DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_Mem (idx=%d-%d, addr=%#x), hit=%d at Mem, return original packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit);
             // return the final, complete, original packet
             pkt_to_send = pkt;  // send the original packet
-            pkt_to_send->fromLevel     = fromLevel;
+            pkt_to_send->fromLevel     = 3;
             pkt_to_send->isFinalPacket = true;
             pkt_to_send->confirmPkt    = pkt;
 
@@ -1318,7 +1318,7 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
         if (hit || fromLevel == 2) {    // send the original packet if it hits or the packet is from memory
             DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_Perfect (idx=%d-%d, addr=%#x), hit=%d at L%d, return original packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit, fromLevel);
             pkt_to_send = pkt;  // send the original packet
-            pkt_to_send->fromLevel     = fromLevel;
+            pkt_to_send->fromLevel     = (fromLevel == 2) ? 3 : fromLevel;
             pkt_to_send->isFinalPacket = true;
             pkt_to_send->confirmPkt    = pkt;
             delete srequest;
@@ -1335,7 +1335,7 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
         if (hit || fromLevel == 2) {    // send the original packet if it hits or the packet is from memory
             DPRINTF(JY_Ruby, "hitCallbackObliv: SPEC_LD_PerfectUnsafe (idx=%d-%d, addr=%#x), hit=%d at L%d, return original packet\n", pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()), hit, fromLevel);
             pkt_to_send = pkt;  // send the original packet
-            pkt_to_send->fromLevel     = fromLevel;
+            pkt_to_send->fromLevel     = (fromLevel == 2) ? 3 : fromLevel;
             pkt_to_send->isFinalPacket = true;
             pkt_to_send->confirmPkt    = pkt;
             delete srequest;

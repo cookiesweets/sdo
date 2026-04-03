@@ -135,7 +135,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
     else if (inst->isLoad() && pkt->isValidate())
         DPRINTF(JY, "a validate packet for [sn:%lli]\n", pkt->seqNum);
 
-    DPRINTF(JY, "recv a Packet [sn:%lli] with HitSB = %d, HitL0 = %d, HitL1 = %d, HitL2 = %d, HitMem = %d\n", 
+        DPRINTF(JY, "recv a Packet [sn:%lli] with HitSB = %d, HitL0 = %d, HitL1 = %d, HitMem = %d\n",
             pkt->seqNum, pkt->isSB_Hit(), pkt->isL0_Hit(), pkt->isL1_Hit(), pkt->isMem_Hit());
 
     // Jiyong, set up cache hit status
@@ -264,7 +264,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                 inst->oblS_Complete = inst->oblS_FstHalfComplete && inst->oblS_SndHalfComplete;
 
                 DPRINTF(JY, "This SpecLD (split) has HitSB = %d. HitL0 = %d, HitL1 = %d, HitMem = %d, complete = %d\n",
-                        inst->oblS_Hit_SB, inst->oblS_Hit_L0, inst->oblS_Hit_L1, inst->oblS_Hit_L2, inst->oblS_Hit_Mem, inst->oblS_Complete);
+                    inst->oblS_Hit_SB, inst->oblS_Hit_L0, inst->oblS_Hit_L1, inst->oblS_Hit_Mem, inst->oblS_Complete);
             }
             else {
                 // not a split load
@@ -285,7 +285,7 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
                     inst->oblS_Complete = true;
 
                 DPRINTF(JY, "This SpecLD (not split) now has HitSB = %d, HitL0 = %d, HitL1 = %d, HitMem = %d, complete = %d\n",
-                        inst->oblS_Hit_SB, inst->oblS_Hit_L0, inst->oblS_Hit_L1, inst->oblS_Hit_L2, inst->oblS_Hit_Mem, inst->oblS_Complete);
+                    inst->oblS_Hit_SB, inst->oblS_Hit_L0, inst->oblS_Hit_L1, inst->oblS_Hit_Mem, inst->oblS_Complete);
             }
             // Jiyong, MLDOM, TODO: add the value prediction here
             // assume it's skipped for now
