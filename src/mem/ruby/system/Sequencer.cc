@@ -718,7 +718,7 @@ Sequencer::readCallback(Addr address, DataBlock& data,
     if (pkt->isSpec()) {
         assert(!pkt->onlyAccessSpecBuf());
         // Jiyong: remove SpecBuffer related code
-        if (!RubySystem::getMLDOMEnabled) {
+        if (!RubySystem::getMLDOMEnabled()) {
             DPRINTFR(SpecBuffer, "%10s SPEC_LD callback (idx=%d-%d, addr=%#x)\n", curTick(), pkt->reqIdx, pkt->isFirst()? 0 : 1, printAddress(pkt->getAddr()));
             updateSBB(pkt, data, address, true);
         }
@@ -783,7 +783,8 @@ Sequencer::readCallback(Addr address, DataBlock& data,
                 initialRequestTime, forwardRequestTime, firstResponseTime);
 }
 
-// Jiyong, MLDOM: readcallback for hit/miss in L0
+// Jiyong, MLDOM: readcallback for logical SDO L0.
+// In MESI_Two_Level, logical L0 is the physical L1 private cache.
 void
 Sequencer::readCallbackObliv_fromL0(Addr address,
                                     const bool hitAtL0,
@@ -859,7 +860,8 @@ Sequencer::readCallbackObliv_fromL0(Addr address,
                 true, mach, false, initialRequestTime, forwardRequestTime, firstResponseTime);
 }
 
-// Jiyong, MLDOM: readcallback for hit/miss in L1
+// Jiyong, MLDOM: readcallback for logical SDO L1.
+// In MESI_Two_Level, logical L1 is the physical L2 shared cache.
 void
 Sequencer::readCallbackObliv_fromL1(Addr address,
                                     const bool hitAtL1,
@@ -931,11 +933,11 @@ Sequencer::readCallbackObliv_fromL1(Addr address,
         ret_data = data_from_L1;
     }
 
-    hitCallbackObliv(request, hitAtL1, ret_data, 1, // 1 means the response is from L1
+    hitCallbackObliv(request, hitAtL1, ret_data, 1, // logical SDO L1 / physical shared L2
                 true, mach, false, initialRequestTime, forwardRequestTime, firstResponseTime);
 }
 
-// Jiyong, MLDOM: readcallback for hit/miss in L2
+// Jiyong, MLDOM: readcallback for hit/miss in memory
 void
 Sequencer::readCallbackObliv_fromMem(Addr address,
                                      const bool hitAtMem,

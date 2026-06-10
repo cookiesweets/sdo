@@ -36,14 +36,20 @@ typedef enum {
 } LocPred_t;
 
 typedef enum {
-  Cache_L1 = 0,       // L0 in MESI_Three_Level; private top cache in MESI_Two_Level
-  Cache_L2,           // L1 in MESI_Three_Level; shared lower cache in MESI_Two_Level
-  Cache_L3,           // L2 in MESI_Three_Level; kept for compatibility, folded onto Cache_L2 when only the two-level packet interface is active
+  Cache_L1 = 0,       // Logical SDO L0: private cache (physical L1 in MESI_Two_Level)
+  Cache_L2,           // Logical SDO L1: shared cache (physical L2 in MESI_Two_Level)
+  Cache_L3,           // Legacy SDO L2: folded onto Cache_L2 in MESI_Two_Level
     DRAM,               // Memory
     Cache_L1c,          // Same as Cache_L1, used by hysteresis
     Perfect_Level,      // Target level for safe perfect predictor
     PerfectUnsafe_Level,// Target level for unsafe perfect predictor
 } CacheLevel_t;
+
+inline CacheLevel_t
+foldCacheLevelForTwoLevelSDO(CacheLevel_t level)
+{
+    return level == Cache_L3 ? Cache_L2 : level;
+}
 
 LocPred_t string_to_pred_type(const std::string pred_str);
 
@@ -341,4 +347,3 @@ class LocPred_tournament_3Way : public LocPred_BaseType {
 
 
 #endif
-

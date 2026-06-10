@@ -129,6 +129,8 @@ LSQUnit<Impl>::completeDataAccess(PacketPtr pkt)
             DPRINTF(JY, "a packet [sn:%lli] SpecLD_Mem from Level %d, is_final_packet = %d, carryData = %d\n", pkt->seqNum, pkt->fromLevel, pkt->isFinalPacket, pkt->carryData);
         else if (pkt->isSpecPerfect())
             DPRINTF(JY, "a packet [sn:%lli] SpecLD_Perfect from Level %d, is_final_packet = %d, carryData = %d\n", pkt->seqNum, pkt->fromLevel, pkt->isFinalPacket, pkt->carryData);
+        else if (pkt->isSpecPerfectUnsafe())
+            DPRINTF(JY, "a packet [sn:%lli] SpecLD_PerfectUnsafe from Level %d, is_final_packet = %d, carryData = %d\n", pkt->seqNum, pkt->fromLevel, pkt->isFinalPacket, pkt->carryData);
     }
     else if (inst->isLoad() && pkt->isExpose())
         DPRINTF(JY, "a expose packet for [sn:%lli]\n", pkt->seqNum);
@@ -3514,9 +3516,9 @@ LSQUnit<Impl>::updateLocationPredictor(DynInstPtr &load_inst, int type)
                 load_inst->update_locPred_on_commit =
                     cpu->locationPredictor->update(load_inst->pcState().instAddr(),
                                                    load_inst->seqNum,
-                                                   Cache_L3);
+                                                   foldCacheLevelForTwoLevelSDO(Cache_L3));
 
-                DPRINTF(JY_SDO_Pred, "<Update> A reg load PC: %s, [sn=%lli] update level=L2\n",
+                DPRINTF(JY_SDO_Pred, "<Update> A reg load PC: %s, [sn=%lli] update legacy L2 as physical shared L2\n",
                         load_inst->pcState(), load_inst->seqNum);
             }
             else if (load_inst->regLd_Hit_Level == 3) {
@@ -3567,9 +3569,9 @@ LSQUnit<Impl>::updateLocationPredictor(DynInstPtr &load_inst, int type)
                 load_inst->update_locPred_on_commit =
                     cpu->locationPredictor->update(load_inst->pcState().instAddr(),
                                                    load_inst->seqNum,
-                                                   Cache_L3);
+                                                   foldCacheLevelForTwoLevelSDO(Cache_L3));
 
-                DPRINTF(JY_SDO_Pred, "<Update> A obls PC: %s, [sn=%lli] update level=L2\n",
+                DPRINTF(JY_SDO_Pred, "<Update> A obls PC: %s, [sn=%lli] update legacy L2 as physical shared L2\n",
                         load_inst->pcState(), load_inst->seqNum);
             }
             else if (load_inst->oblS_Hit_Mem) {
@@ -3608,16 +3610,16 @@ LSQUnit<Impl>::updateLocationPredictor(DynInstPtr &load_inst, int type)
                                                    load_inst->seqNum,
                                                    Cache_L2);
 
-                DPRINTF(JY_SDO_Pred, "<Update> A Val PC: %s, [sn=%lli] update level=L2\n",
+                DPRINTF(JY_SDO_Pred, "<Update> A Val PC: %s, [sn=%lli] update level=L1\n",
                         load_inst->pcState(), load_inst->seqNum);
             }
             else if (load_inst->ExpVal_Hit_Level == 2) {
                 load_inst->update_locPred_on_commit =
                     cpu->locationPredictor->update(load_inst->pcState().instAddr(),
                                                    load_inst->seqNum,
-                                                   Cache_L3);
+                                                   foldCacheLevelForTwoLevelSDO(Cache_L3));
 
-                DPRINTF(JY_SDO_Pred, "<Update> A Val PC: %s, [sn=%lli] update level=L3\n",
+                DPRINTF(JY_SDO_Pred, "<Update> A Val PC: %s, [sn=%lli] update legacy L2 as physical shared L2\n",
                         load_inst->pcState(), load_inst->seqNum);
             }
             else if (load_inst->ExpVal_Hit_Level == 3) {

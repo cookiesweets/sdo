@@ -1793,7 +1793,7 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
             else
                 numIncorrectPred++;
         }
-        else if (head_inst->pred_level == 2) {   // Jiyong: cache level 2
+        else if (head_inst->pred_level == 2) {   // Preserved Three-Level accounting only
             numL2IsPredicted++;
             if (head_inst->oblS_Hit_SB) {
                 numInexactCorrectPred++;
@@ -2012,9 +2012,9 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
                     else if (head_inst->regLd_Hit_Level == 1)
                         cpu->inst_to_hit_trace[load_pc].push_back(2);   // hit L1 (L2 cache)
                     else if (head_inst->regLd_Hit_Level == 2)
-                        cpu->inst_to_hit_trace[load_pc].push_back(3);   // hit L2 (L3 cache)
+                        cpu->inst_to_hit_trace[load_pc].push_back(3);   // legacy L2 hit
                     else if (head_inst->regLd_Hit_Level == 3)
-                        cpu->inst_to_hit_trace[load_pc].push_back(4);   // hit L3 (memory)
+                        cpu->inst_to_hit_trace[load_pc].push_back(4);   // hit memory
                     else
                         cpu->inst_to_hit_trace[load_pc].push_back(-1);  // miss all
                 }

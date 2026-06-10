@@ -562,7 +562,7 @@ FullO3CPU<Impl>::FullO3CPU(DerivO3CPUParams *params)
         // Jiyong, MLDOM: Predictor type
         //
         if (pred_type_name.compare("static") == 0) {
-            // static prediction (no predictor): predict L0/L1/L2/DRAM statically
+            // static prediction (no predictor): predict private/shared/DRAM statically
             pred_type = Static;
 
             CacheLevel_t static_level = Cache_L1;
@@ -571,14 +571,13 @@ FullO3CPU<Impl>::FullO3CPU(DerivO3CPUParams *params)
             else if (params->pred_option == 1)
                 static_level = Cache_L2;
             else if (params->pred_option == 2)
-                static_level = Cache_L3;
+                static_level = Cache_L2; // legacy LLC option folds to shared lower cache
             else if (params->pred_option == 3)
                 static_level = DRAM;
             else {
                 printf("ERROR: unknown static cache level %d\n", params->pred_option);
                 assert(0);
             }
-
             printf("SDO chooses static predictor with level = %d\n", static_level);
 
             // create the predictor

@@ -971,17 +971,20 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
         load_inst->pred_level = cpu->locationPredictor->predict(load_inst->pcState().instAddr(), load_inst->seqNum, chosen_pred);
         load_inst->chosen_pred_type = chosen_pred;
 
-        // The active SDO packet interface exposes only private-cache,
-        // shared-lower-cache, and memory targets. Keep the old Three-Level
-        // enum value so the predictor code remains intact, but fold its LLC
-        // prediction onto the shared lower cache before issuing packets in
-        // MESI_Two_Level. The commented SPEC_LD_L2 path below preserves the
-        // original Three-Level implementation for reference.
-        if (load_inst->pred_level == Cache_L3) {
+        // The active MESI_Two_Level SDO packet interface exposes only
+        // private-cache, shared-cache, and memory targets. In this file:
+        //   logical SDO L0 == physical MESI_Two_Level L1 private cache
+        //   logical SDO L1 == physical MESI_Two_Level L2 shared cache
+        // Keep the old Three-Level
+        // enum value so predictor code remains readable, but fold its LLC
+        // prediction onto the shared cache before issuing packets.
+        CacheLevel_t folded_pred_level =
+            foldCacheLevelForTwoLevelSDO(load_inst->pred_level);
+        if (folded_pred_level != load_inst->pred_level) {
             DPRINTF(JY_SDO_Pred,
                     "<Predict> fold Cache_L3 onto Cache_L2 for load PC:%s, [sn:%lli]\n",
                     load_inst->pcState(), load_inst->seqNum);
-            load_inst->pred_level = Cache_L2;
+            load_inst->pred_level = folded_pred_level;
         }
     }
 
@@ -1015,11 +1018,11 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
             // SDO style spec load request
             switch (load_inst->pred_level) {
               case Cache_L1: // predict L0
-                DPRINTF(JY, "ld_inst [sn:%lli], idx=%d wants to send a spec ld to L0 (pred_level = %d(L1))\n", load_inst->seqNum, load_idx, load_inst->pred_level);
+                DPRINTF(JY, "ld_inst [sn:%lli], idx=%d wants to send a spec ld to logical L0 / physical private L1 (pred_level=%d)\n", load_inst->seqNum, load_idx, load_inst->pred_level);
                 data_pkt = Packet::createReadSpecL0(req);
                 break;
               case Cache_L2: // predict L1
-                DPRINTF(JY, "ld_inst [sn:%lli], idx=%d wants to send a spec ld to L1 (pred_level = %d(L2))\n", load_inst->seqNum, load_idx, load_inst->pred_level);
+                DPRINTF(JY, "ld_inst [sn:%lli], idx=%d wants to send a spec ld to logical L1 / physical shared L2 (pred_level=%d)\n", load_inst->seqNum, load_idx, load_inst->pred_level);
                 data_pkt = Packet::createReadSpecL1(req);
                 break;
             //   case Cache_L3: // predict L2
@@ -1149,11 +1152,11 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
             } else {
                 // create dedicated packets
                 switch (load_inst->pred_level) {
-                    case Cache_L1: // predict L0
+                    case Cache_L1: // logical L0 / physical private L1
                         fst_data_pkt = Packet::createReadSpecL0(sreqLow);
                         snd_data_pkt = Packet::createReadSpecL0(sreqHigh);
                         break;
-                    case Cache_L2: // predict L1
+                    case Cache_L2: // logical L1 / physical shared L2
                         fst_data_pkt = Packet::createReadSpecL1(sreqLow);
                         snd_data_pkt = Packet::createReadSpecL1(sreqHigh);
                         break;

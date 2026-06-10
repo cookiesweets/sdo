@@ -49,9 +49,6 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   //  // To this node's L0 cache FROM the network
   //  MessageBuffer * bufferFromL1, network="From";
 
-   // Jiyong, MLDOM: spec data channel from L1 to L0
-   MessageBuffer * bufferFromL1_specData, network="From";
-
    // a local L1 -> this L2 bank, currently ordered with directory forwarded requests
    MessageBuffer * requestFromL1Cache, network="To", virtual_network="0",
         vnet_type="request";
@@ -115,15 +112,14 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     SpecLoad,        desc="SpecLoad request from the home processor";
     Expose,          desc="Expose request from the home processor";
 
-    // In MESI_Two_Level there is no separate Ruby-visible L0 cache.
-    // We keep the SPEC_LD_L0 / SPEC_LD_L1 request names because they are
-    // part of the global MLDOM request interface, but locally they map to:
-    //   - SpecLoad_L0: this private cache (first visible cache level)
-    //   - SpecLoad_L1: the shared lower cache (Ruby L2 / external L1)
-    //   - SpecLoad_Mem: memory behind the shared lower cache
+    // MESI_Two_Level has only two cache levels. The global SDO/MLDOM
+    // interface keeps the old logical names:
+    //   - logical L0 == physical L1 private cache (this controller)
+    //   - logical L1 == physical L2 shared cache (next controller)
+    //   - Mem        == memory behind the shared physical L2
     SpecLoad_L0,            desc="SpecLoad request checked at this private cache";
-    SpecLoad_L1,            desc="SpecLoad request forwarded to the shared lower cache";
-    SpecLoad_Mem,           desc="SpecLoad request forwarded through the shared lower cache to Memory";
+    SpecLoad_L1,            desc="SpecLoad request forwarded to the shared physical L2 cache";
+    SpecLoad_Mem,           desc="SpecLoad request forwarded through the shared physical L2 cache to Memory";
     SpecLoad_Perfect,       desc="Specload request from home processor, perfectly hit the location";
     SpecLoad_PerfectUnsafe, desc="Specload request from home processor, perfectly hit the location(unsafe version)";
 
@@ -144,10 +140,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     DataS_fromL1,       desc="data for GETS request, need to unblock directory";
     Data_all_Acks,       desc="Data for processor, all acks";
     // Jiyong, MLDOM
-    // Data_Spec_fromL1 is the exported response for the shared lower cache in
-    // MESI_Two_Level. Data_Spec_fromL2 is kept only for compatibility with
+    // Data_Spec_fromL1 is the logical-SDO response for the shared physical L2
+    // cache in MESI_Two_Level. Data_Spec_fromL2 is kept only for compatibility with
     // shared message definitions and is not used by this protocol.
-    Data_Spec_fromL1,   desc="Spec data for processor sent from the exported lower cache level";
+    Data_Spec_fromL1,   desc="Spec data for processor sent from the shared physical L2 cache";
     Data_Spec_fromL2,   desc="Unused in MESI_Two_Level";
     Data_Spec_fromMem,  desc="Spec data for processor sent from Mem";
 
@@ -724,6 +720,24 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     } // peek
   }
 
+  action(ij_issueGETSPEC_PerfectUnsafe_pass_L0, 'pup0', desc="Issue SpecLoad PerfectUnsafe to lower levels given it misses L0") {
+    peek(mandatoryQueue_in, RubyRequest) {
+      enqueue(requestL1Network_out, RequestMsg, l1_request_latency) {
+        out_msg.addr := address;
+        out_msg.Type := CoherenceRequestType:GETSPEC_PerfectUnsafe;
+        out_msg.Requestor := machineID;
+        out_msg.Destination.add(mapAddressToRange(address, MachineType:L2Cache,
+                          l2_select_low_bit, l2_select_num_bits, intToID(0)));
+        DPRINTF(RubySlicc, "address: %#x, destination: %s\n",
+                address, out_msg.Destination);
+        out_msg.MessageSize := MessageSizeType:SPECLD_PerfectUnsafe_Control;
+        out_msg.AccessMode := in_msg.AccessMode;
+        out_msg.idx := in_msg.idx;
+        out_msg.Prefetch := in_msg.Prefetch;
+      } // enqueue
+    } // peek
+  }
+
   action(ex_issueEXPOSE, "ex", desc="Issue EXPOSE") {
     peek(mandatoryQueue_in, RubyRequest) {
       enqueue(requestL1Network_out, RequestMsg, l1_request_latency) {
@@ -1153,6 +1167,14 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     }
   }
 
+  action(h_invisi_spec_load_hit, "his",
+         desc="Notify sequencer the non-MLDOM spec load completed.")
+  {
+    assert(is_valid(cache_entry));
+    DPRINTF(RubySlicc, "%s\n", cache_entry.DataBlk);
+    sequencer.readCallback(address, cache_entry.DataBlk);
+  }
+
   action(mj_spec_load_miss_l0, "m0", desc="Spec load LX misses L0. Notify sequencer the load returns.") {
     peek(mandatoryQueue_in, RubyRequest) {
       DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=0) misss L0: address: %#x, idx: %d; call readCallback_fromL0\n", address, in_msg.idx);
@@ -1160,10 +1182,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     }
   }
 
-  // In MESI_Two_Level this action consumes the exported lower-cache response.
-  // The producer is the shared Ruby L2 cache, but it is intentionally exposed
-  // to the sequencer as the external L1/LLC response.
-  action(hxj_send_spec_data_from_l1_to_cpu, "df1", desc="Send spec data from the exported lower cache level up to the core") {
+  // In MESI_Two_Level this action consumes the logical SDO L1 response.
+  // The producer is the physical L2 shared cache.
+  action(hxj_send_spec_data_from_l1_to_cpu, "df1", desc="Send spec data from the shared physical L2 cache up to the core") {
     peek(responseL1Network_in, ResponseMsg) {
       DPRINTF(JY_Ruby, "send the spec data from L1 upto the core: address: %#x, idx: %d ; call readCallback_fromL1\n", address, in_msg.idx);
       DataBlock dataBlk_L1  := in_msg.DataBlk_L1;
@@ -1207,6 +1228,14 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       assert(is_valid(cache_entry));
       DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=0) hits L0: address: %#x, idx: %d; call readCallback_fromL0\n", address, in_msg.idx);
       sequencer.readCallbackObliv_fromL0(address, true, cache_entry.DataBlk, in_msg.idx);
+    }
+  }
+
+  action(hsx_invisi_spec_load_hit, "hisx", desc="Notify sequencer the external non-MLDOM spec load completed.")
+  {
+    peek(responseL1Network_in, ResponseMsg) {
+      tbe.DataBlk := in_msg.DataBlk;
+      sequencer.readCallback(address, tbe.DataBlk, true);
     }
   }
 
@@ -1392,35 +1421,35 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   //*****************************************************
 
   // Transitions for Load/Store/Replacement/WriteBack from transient states
-  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK}, {Load, Expose, Ifetch, Store, L1_Replacement}) {
+  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK}, {Load, Expose, SpecLoad, Ifetch, Store, L1_Replacement}) {
     z_stallAndWaitMandatoryQueue;
   }
 
-  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_L0}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM}, {SpecLoad_L0}) {
     mj_spec_load_miss_l0;
     k_popMandatoryQueue;
   }
 
-  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_L1}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM}, {SpecLoad_L1}) {
     mj_spec_load_miss_l0;
     // send a request to L1
     ij_issueGETSPEC_L1_pass_L0;
     k_popMandatoryQueue;
   }
 
-  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_Mem}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM}, {SpecLoad_Mem}) {
     mj_spec_load_miss_l0;
     // send a request to L1
     ij_issueGETSPEC_Mem_pass_L0;
     k_popMandatoryQueue;
   }
 
-  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM, S, E, M}, {Data_Spec_fromL1}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM, S, E, M}, {Data_Spec_fromL1}) {
     hxj_send_spec_data_from_l1_to_cpu;
     o_popIncomingResponseQueue;
   }
 
-  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM, S, E, M}, {Data_Spec_fromMem}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM, S, E, M}, {Data_Spec_fromMem}) {
     hxj_send_spec_data_from_mem_to_cpu;
     o_popIncomingResponseQueue;
   }
@@ -1432,10 +1461,25 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     k_popMandatoryQueue;
   }
 
-  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IM, PF_SM}, {SpecLoad_Perfect}) {
+  transition({NP, I, IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM}, {SpecLoad_Perfect}) {
     mj_spec_load_miss_l0;
     // send a request to L1
     ij_issueGETSPEC_Perfect_pass_L0;
+    k_popMandatoryQueue;
+  }
+
+  transition({S,E,M}, SpecLoad_PerfectUnsafe) {
+    h_spec_load_hit;
+    k_popMandatoryQueue;
+  }
+
+  transition({IS, IM, IX, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM}, SpecLoad_PerfectUnsafe) {
+    z_stallAndWaitMandatoryQueue;
+  }
+
+  transition({NP, I}, SpecLoad_PerfectUnsafe) {
+    mj_spec_load_miss_l0;
+    ij_issueGETSPEC_PerfectUnsafe_pass_L0;
     k_popMandatoryQueue;
   }
 
@@ -1443,7 +1487,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     z_stallAndWaitMandatoryQueue;
   }
 
-  transition({PF_IM, PF_SM}, {Load, Expose, Ifetch, L1_Replacement}) {
+  transition({PF_IM, PF_SM}, {Load, Expose, SpecLoad, Ifetch, L1_Replacement}) {
     z_stallAndWaitMandatoryQueue;
   }
 
@@ -1475,11 +1519,11 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     k_popMandatoryQueue;
   }
 
-  // transition({NP,I}, SpecLoad_L0, IX) {
-  //   iw_allocateTBEWithoutCacheEntry;
-  //   as_issueGETSPEC;
-  //   k_popMandatoryQueue;
-  // }
+  transition({NP,I}, SpecLoad, IX) {
+    iw_allocateTBEWithoutCacheEntry;
+    as_issueGETSPEC;
+    k_popMandatoryQueue;
+  }
 
   transition({NP,I}, PF_Load, PF_IS) {
     oo_allocateL1DCacheBlock;
@@ -1500,7 +1544,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     k_popMandatoryQueue;
   }
 
-  transition({PF_IS, PF_IS_I}, SpecLoad_L0) {
+  transition({PF_IS, PF_IS_I}, SpecLoad) {
     k_popMandatoryQueue;
   }
 
@@ -1570,6 +1614,11 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   transition({S,E,M}, SpecLoad_L0) {
     h_spec_load_hit;
+    k_popMandatoryQueue;
+  }
+
+  transition({S,E,M}, SpecLoad) {
+    h_invisi_spec_load_hit;
     k_popMandatoryQueue;
   }
 
@@ -1839,7 +1888,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   // [SafeSpec] Data and Data_Exclusive are not possible at IX
   transition(IX, {Data_all_Acks, DataS_fromL1}, I) {
-    hsx_spec_load_hit;
+    hsx_invisi_spec_load_hit;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
     kd_wakeUpDependents;

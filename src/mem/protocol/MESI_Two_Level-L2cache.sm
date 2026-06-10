@@ -48,7 +48,8 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
   MessageBuffer * responseFromL2Cache, network="To", virtual_network="1",
     vnet_type="response";  // this L2 bank -> a local L1 || Memory
 
-  // Jiyong, MLDOM: spec data channel from L1 to L0
+  // MESI_Two_Level returns SDO spec data on responseFromL2Cache. The old
+  // dedicated L1-to-L0 spec-data channel belongs to MESI_Three_Level only.
   // MessageBuffer * bufferToL0_specData, network="To";
 
   // FROM the network to this local bank of L2 cache
@@ -109,7 +110,9 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
     L1_GETSPEC,              desc="L1 GETSPEC request for a block mapped to us";
     L1_EXPOSE,               desc="L1 EXPOSE request for a block mapped to us";
     // Jiyong, MLDOM
-    SpecLoad_L2,             desc="Specload request from L1, all the way till L2";
+    // Legacy name: GETSPEC_L2 means the logical SDO L1 target, which is
+    // the shared physical L2 cache in MESI_Two_Level.
+    SpecLoad_L2,             desc="SpecLoad request targeting the shared physical L2 cache";
     SpecLoad_Mem,            desc="Specload request from L1, all the way till Memory";
     SpecLoad_Perfect,        desc="Specload request from L1, all the way till hit";
     SpecLoad_PerfectUnsafe,  desc="Specload request from L1, all the way till hit";
@@ -640,10 +643,10 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
     }
   }
 
-  // In MESI_Two_Level this shared Ruby L2 cache is the externally visible
-  // lower cache level. Export its hit status as hitAtL1 to keep the
-  // CPU/sequencer interface consistent with the two-level hierarchy.
-  action(d_sendDataToRequestor_Hit, "dht", desc="Send data from cache to requestor, exported lower-cache hit") {
+  // In MESI_Two_Level this Ruby L2 is the shared cache. Export its hit
+  // status as logical hitAtL1 to keep the CPU/sequencer interface consistent
+  // with the two-level SDO hierarchy.
+  action(d_sendDataToRequestor_Hit, "dht", desc="Send data from shared physical L2 cache to requestor") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
@@ -661,7 +664,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         out_msg.hitAtL0   := in_msg.hitAtL0;
         // out_msg.hitAtL1   := in_msg.hitAtL1;
         out_msg.hitAtL1   := true;
-        DPRINTF(JY_Ruby, "address: %#x hits in the shared lower cache (exported as L1)\n", address);
+        DPRINTF(JY_Ruby, "address: %#x hits in logical SDO L1 / physical shared L2\n", address);
       }
     }
   }
@@ -685,7 +688,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
     }
   }
 
-  action(dd_sendExclusiveDataToRequestor_Hit, "ddht", desc="Send data from cache to requestor, exported lower-cache exclusive hit") {
+  action(dd_sendExclusiveDataToRequestor_Hit, "ddht", desc="Send exclusive data from shared physical L2 cache to requestor") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
@@ -701,7 +704,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
           out_msg.AckCount := out_msg.AckCount + 1;
         }
         out_msg.hitAtL1 := true;
-        DPRINTF(JY_Ruby, "address: %#x hits in the shared lower cache (exported as L1)\n", address);
+        DPRINTF(JY_Ruby, "address: %#x hits in logical SDO L1 / physical shared L2\n", address);
       }
     }
   }
@@ -740,7 +743,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
     }
   }
 
-  action(ds_sendSharedDataToRequestor_Hit, "dsht", desc="Send data from cache to requestor, exported lower-cache shared hit") {
+  action(ds_sendSharedDataToRequestor_Hit, "dsht", desc="Send shared data from shared physical L2 cache to requestor") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
@@ -752,15 +755,15 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         out_msg.MessageSize := MessageSizeType:Response_Data;
         out_msg.AckCount := 0;
         out_msg.hitAtL1 := true;
-        DPRINTF(JY_Ruby, "address: %#x hits in the shared lower cache (exported as L1)\n", address);
+        DPRINTF(JY_Ruby, "address: %#x hits in logical SDO L1 / physical shared L2\n", address);
       }
     }
   }
 
-  // The shared Ruby L2 is exported as the lower cache level (external L1) in
-  // MESI_Two_Level. Populate the exported L1 fields so the private cache and
-  // sequencer do not consume an uninitialized DataBlk_L1 payload.
-  action(hj_spec_load_hit_l2, "h2", desc="Spec load hits in the shared lower cache and returns exported lower-cache data") {
+  // The shared Ruby L2 is exported as logical SDO L1 in MESI_Two_Level.
+  // Populate the logical L1 fields so the private cache and sequencer do not
+  // consume an uninitialized DataBlk_L1 payload.
+  action(hj_spec_load_hit_l2, "h2", desc="Spec load hits in the shared physical L2 cache and returns logical L1 data") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         assert(is_valid(cache_entry));
@@ -776,12 +779,12 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         out_msg.hitAtL1    := true;
         out_msg.idx        := in_msg.idx;
 
-        DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=1) hits in the shared lower cache: address: %#x, idx: %d ; send the response up\n", address, out_msg.idx);
+        DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=1) hits in logical SDO L1 / physical shared L2: address: %#x, idx: %d ; send the response up\n", address, out_msg.idx);
       }
     }
   }
 
-  action(mj_spec_load_miss_l2, "m2", desc="Spec load misses in the shared lower cache and returns exported lower-cache miss") {
+  action(mj_spec_load_miss_l2, "m2", desc="Spec load misses in the shared physical L2 cache and returns logical L1 miss") {
     peek(L1RequestL2Network_in, RequestMsg) {
       enqueue(responseL2Network_out, ResponseMsg, l2_response_latency) {
         out_msg.addr := address;
@@ -796,7 +799,7 @@ machine(MachineType:L2Cache, "MESI Directory L2 Cache CMP")
         out_msg.hitAtL1    := false;
         out_msg.idx        := in_msg.idx;
 
-        DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=1) misses in the shared lower cache: address: %#x, idx: %d ; send the response up\n", address, out_msg.idx);
+        DPRINTF(JY_Ruby, "SPEC_LD_LX (X>=1) misses in logical SDO L1 / physical shared L2: address: %#x, idx: %d ; send the response up\n", address, out_msg.idx);
       }
     }
   }
