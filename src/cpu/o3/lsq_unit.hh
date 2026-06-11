@@ -978,7 +978,7 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
         // Keep the old Three-Level
         // enum value so predictor code remains readable, but fold its LLC
         // prediction onto the shared cache before issuing packets.
-        CacheLevel_t folded_pred_level =
+        int folded_pred_level =
             foldCacheLevelForTwoLevelSDO(load_inst->pred_level);
         if (folded_pred_level != load_inst->pred_level) {
             DPRINTF(JY_SDO_Pred,
