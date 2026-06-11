@@ -96,6 +96,28 @@ class Sequencer : public RubyPort
                        const Cycles initialRequestTime = Cycles(0),
                        const Cycles forwardRequestTime = Cycles(0),
                        const Cycles firstResponseTime = Cycles(0));
+    void writeCallback(Addr address, DataBlock& data,
+                       const bool externalHit, const MachineType mach);
+    void writeCallback(Addr address, DataBlock& data,
+                       const bool externalHit, const MachineType mach,
+                       const Cycles initialRequestTime,
+                       const Cycles forwardRequestTime,
+                       const Cycles firstResponseTime);
+    void writeCallback(Addr address, DataBlock& data,
+                       const bool externalHit, const bool hitAtL0,
+                       const bool hitAtL1, const bool hitAtL2,
+                       const bool hitAtMem);
+    void writeCallback(Addr address, DataBlock& data,
+                       const bool externalHit, const bool hitAtL0,
+                       const bool hitAtL1, const bool hitAtL2,
+                       const bool hitAtMem, const MachineType mach);
+    void writeCallback(Addr address, DataBlock& data,
+                       const bool externalHit, const bool hitAtL0,
+                       const bool hitAtL1, const bool hitAtL2,
+                       const bool hitAtMem, const MachineType mach,
+                       const Cycles initialRequestTime,
+                       const Cycles forwardRequestTime,
+                       const Cycles firstResponseTime);
 
     void readCallback(Addr address,
                       DataBlock& data,
@@ -107,6 +129,28 @@ class Sequencer : public RubyPort
                       const Cycles initialRequestTime = Cycles(0),
                       const Cycles forwardRequestTime = Cycles(0),
                       const Cycles firstResponseTime = Cycles(0));
+    void readCallback(Addr address, DataBlock& data,
+                      const bool externalHit, const MachineType mach);
+    void readCallback(Addr address, DataBlock& data,
+                      const bool externalHit, const MachineType mach,
+                      const Cycles initialRequestTime,
+                      const Cycles forwardRequestTime,
+                      const Cycles firstResponseTime);
+    void readCallback(Addr address, DataBlock& data,
+                      const bool externalHit, const bool hitAtL0,
+                      const bool hitAtL1, const bool hitAtL2,
+                      const bool hitAtMem);
+    void readCallback(Addr address, DataBlock& data,
+                      const bool externalHit, const bool hitAtL0,
+                      const bool hitAtL1, const bool hitAtL2,
+                      const bool hitAtMem, const MachineType mach);
+    void readCallback(Addr address, DataBlock& data,
+                      const bool externalHit, const bool hitAtL0,
+                      const bool hitAtL1, const bool hitAtL2,
+                      const bool hitAtMem, const MachineType mach,
+                      const Cycles initialRequestTime,
+                      const Cycles forwardRequestTime,
+                      const Cycles firstResponseTime);
 
     // Jiyong, MLDOM: add callback function for MLDOM spec loads
     void readCallbackObliv_fromL0(Addr address,

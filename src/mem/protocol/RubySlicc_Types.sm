@@ -101,9 +101,12 @@ structure (NetDest, external = "yes", non_obj="yes") {
 
 structure (Sequencer, external = "yes") {
   void readCallback(Addr, DataBlock);
+  void readCallback(Addr, DataBlock, bool);
   void readCallback(Addr, DataBlock, bool, bool);
+  void readCallback(Addr, DataBlock, bool, MachineType);
+  void readCallback(Addr, DataBlock, bool, MachineType, Cycles, Cycles, Cycles);
   void readCallback(Addr, DataBlock, bool, bool, bool, bool);
-  // void readCallback(Addr, DataBlock, bool, bool, bool, bool, bool);
+  void readCallback(Addr, DataBlock, bool, bool, bool, bool, bool);
   void readCallback(Addr, DataBlock, bool, bool, bool, bool, bool, MachineType);
   void readCallback(Addr, DataBlock, bool, bool, bool, bool, bool, MachineType, Cycles, Cycles, Cycles);
 
@@ -118,8 +121,12 @@ structure (Sequencer, external = "yes") {
   void readCallbackObliv_fromMem(Addr, bool, DataBlock, int, MachineType, Cycles, Cycles, Cycles);
 
   void writeCallback(Addr, DataBlock);
+  void writeCallback(Addr, DataBlock, bool);
   void writeCallback(Addr, DataBlock, bool, bool);
+  void writeCallback(Addr, DataBlock, bool, MachineType);
+  void writeCallback(Addr, DataBlock, bool, MachineType, Cycles, Cycles, Cycles);
   void writeCallback(Addr, DataBlock, bool, bool, bool, bool);
+  void writeCallback(Addr, DataBlock, bool, bool, bool, bool, bool);
   void writeCallback(Addr, DataBlock, bool, bool, bool, bool, bool, MachineType);
   void writeCallback(Addr, DataBlock, bool, bool, bool, bool, bool, MachineType, Cycles, Cycles, Cycles);
 

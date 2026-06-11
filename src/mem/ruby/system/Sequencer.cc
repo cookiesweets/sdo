@@ -596,6 +596,58 @@ Sequencer::recordMissLatency(const Cycles cycles, const RubyRequestType type,
 
 void
 Sequencer::writeCallback(Addr address, DataBlock& data,
+                         const bool externalHit, const MachineType mach)
+{
+    writeCallback(address, data, externalHit, false, false, false, mach);
+}
+
+void
+Sequencer::writeCallback(Addr address, DataBlock& data,
+                         const bool externalHit, const MachineType mach,
+                         const Cycles initialRequestTime,
+                         const Cycles forwardRequestTime,
+                         const Cycles firstResponseTime)
+{
+    writeCallback(address, data, externalHit, false, false, false, mach,
+                  initialRequestTime, forwardRequestTime, firstResponseTime);
+}
+
+void
+Sequencer::writeCallback(Addr address, DataBlock& data,
+                         const bool externalHit, const bool hitAtL0,
+                         const bool hitAtL1, const bool hitAtL2,
+                         const bool hitAtMem)
+{
+    writeCallback(address, data, externalHit, hitAtL0, hitAtL1 || hitAtL2,
+                  hitAtMem, MachineType_NUM);
+}
+
+void
+Sequencer::writeCallback(Addr address, DataBlock& data,
+                         const bool externalHit, const bool hitAtL0,
+                         const bool hitAtL1, const bool hitAtL2,
+                         const bool hitAtMem, const MachineType mach)
+{
+    writeCallback(address, data, externalHit, hitAtL0, hitAtL1 || hitAtL2,
+                  hitAtMem, mach);
+}
+
+void
+Sequencer::writeCallback(Addr address, DataBlock& data,
+                         const bool externalHit, const bool hitAtL0,
+                         const bool hitAtL1, const bool hitAtL2,
+                         const bool hitAtMem, const MachineType mach,
+                         const Cycles initialRequestTime,
+                         const Cycles forwardRequestTime,
+                         const Cycles firstResponseTime)
+{
+    writeCallback(address, data, externalHit, hitAtL0, hitAtL1 || hitAtL2,
+                  hitAtMem, mach, initialRequestTime, forwardRequestTime,
+                  firstResponseTime);
+}
+
+void
+Sequencer::writeCallback(Addr address, DataBlock& data,
                          const bool externalHit, const bool hitAtL0,
                          const bool hitAtL1, const bool hitAtMem,
                          const MachineType mach,
@@ -670,6 +722,58 @@ bool Sequencer::updateSBB(PacketPtr pkt, DataBlock& data, Addr address, bool dat
     DPRINTFR(JY_Ruby, "[fail] updateSBB for reqIdx=%d, addr=0x%lx, sn=%lli, ifFirst=%d\n",
             pkt->reqIdx, address, pkt->seqNum, pkt->isFirst());
     return false;
+}
+
+void
+Sequencer::readCallback(Addr address, DataBlock& data,
+                        const bool externalHit, const MachineType mach)
+{
+    readCallback(address, data, externalHit, false, false, false, mach);
+}
+
+void
+Sequencer::readCallback(Addr address, DataBlock& data,
+                        const bool externalHit, const MachineType mach,
+                        const Cycles initialRequestTime,
+                        const Cycles forwardRequestTime,
+                        const Cycles firstResponseTime)
+{
+    readCallback(address, data, externalHit, false, false, false, mach,
+                 initialRequestTime, forwardRequestTime, firstResponseTime);
+}
+
+void
+Sequencer::readCallback(Addr address, DataBlock& data,
+                        const bool externalHit, const bool hitAtL0,
+                        const bool hitAtL1, const bool hitAtL2,
+                        const bool hitAtMem)
+{
+    readCallback(address, data, externalHit, hitAtL0, hitAtL1 || hitAtL2,
+                 hitAtMem, MachineType_NUM);
+}
+
+void
+Sequencer::readCallback(Addr address, DataBlock& data,
+                        const bool externalHit, const bool hitAtL0,
+                        const bool hitAtL1, const bool hitAtL2,
+                        const bool hitAtMem, const MachineType mach)
+{
+    readCallback(address, data, externalHit, hitAtL0, hitAtL1 || hitAtL2,
+                 hitAtMem, mach);
+}
+
+void
+Sequencer::readCallback(Addr address, DataBlock& data,
+                        const bool externalHit, const bool hitAtL0,
+                        const bool hitAtL1, const bool hitAtL2,
+                        const bool hitAtMem, const MachineType mach,
+                        const Cycles initialRequestTime,
+                        const Cycles forwardRequestTime,
+                        const Cycles firstResponseTime)
+{
+    readCallback(address, data, externalHit, hitAtL0, hitAtL1 || hitAtL2,
+                 hitAtMem, mach, initialRequestTime, forwardRequestTime,
+                 firstResponseTime);
 }
 
 // [SafeSpec] Called by Ruby to send a response to CPU.
