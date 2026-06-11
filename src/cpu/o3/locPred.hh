@@ -51,6 +51,12 @@ foldCacheLevelForTwoLevelSDO(CacheLevel_t level)
     return level == Cache_L3 ? Cache_L2 : level;
 }
 
+inline int
+foldCacheLevelForTwoLevelSDO(int level)
+{
+    return level == Cache_L3 ? Cache_L2 : level;
+}
+
 LocPred_t string_to_pred_type(const std::string pred_str);
 
 LocPred_BaseType* pred_type_to_pred(LocPred_t pred_type);
