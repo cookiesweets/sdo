@@ -1,14 +1,17 @@
 import m5
 from m5.objects import *
+import os
 
-# These three directory paths are not currently used.
-#gem5_dir = '<FULL_PATH_TO_YOUR_GEM5_INSTALL>'
-#spec_dir = '<FULL_PATH_TO_YOUR_SPEC_CPU2006_INSTALL>'
-#out_dir = '<FULL_PATH_TO_DESIRED_OUTPUT_DIRECTORY>'
+def _dir_prefix(path):
+    if path and not path.endswith(os.sep):
+        return path + os.sep
+    return path
 
-#x86_suffix = '_base.x86_64'
-#'_base.my-alpha'
-x86_suffix = '_r_base.sparespec-m64'
+# The MICRO scripts export SPEC17_RUN_DIR so that the executable path is
+# absolute while benchmark inputs remain relative to the SPEC run directory.
+spec_prefix = _dir_prefix(os.environ.get('SPEC17_EXEC_PREFIX',
+                                         os.environ.get('SPEC17_RUN_DIR', '')))
+x86_suffix = os.environ.get('SPEC17_X86_SUFFIX', '_r_base.sparespec-m64')
 
 #temp
 #binary_dir = spec_dir
@@ -16,7 +19,7 @@ x86_suffix = '_r_base.sparespec-m64'
 
 #500.perlbench
 perlbench = Process() # Update June 7, 2017: This used to be LiveProcess()
-perlbench.executable =  'perlbench' + x86_suffix
+perlbench.executable =  spec_prefix + 'perlbench' + x86_suffix
 # TEST CMDS
 #perlbench.cmd = [perlbench.executable] + ['-I.', '-I./lib', 'attrs.pl']
 # REF CMDS
@@ -27,7 +30,7 @@ perlbench.cmd = [perlbench.executable] + ['-I./lib', 'checkspam.pl', '2500', '5'
 
 #502.gcc
 gcc = Process() # Update June 7, 2017: This used to be LiveProcess()
-gcc.executable = 'cpugcc' + x86_suffix
+gcc.executable = spec_prefix + 'cpugcc' + x86_suffix
 # TEST CMDS
 #gcc.cmd = [gcc.executable] + ['cccp.i', '-o', 'cccp.s']
 # REF CMDS
@@ -45,7 +48,7 @@ gcc.cmd = [gcc.executable] + ['gcc-pp.c', '-O3', '-finline-limit=0', '-fif-conve
 
 #503.bwaves
 bwaves = Process() # Update June 7, 2017: This used to be LiveProcess()
-bwaves.executable = 'bwaves' + x86_suffix
+bwaves.executable = spec_prefix + 'bwaves' + x86_suffix
 # TEST CMDS
 #bwaves.cmd = [bwaves.executable]
 # REF CMDS
@@ -55,7 +58,7 @@ bwaves.input = 'bwaves_1.in'
 
 #505.mcf
 mcf = Process() # Update June 7, 2017: This used to be LiveProcess()
-mcf.executable =  'mcf' + x86_suffix
+mcf.executable =  spec_prefix + 'mcf' + x86_suffix
 # TEST CMDS
 #mcf.cmd = [mcf.executable] + ['inp.in']
 # REF CMDS
@@ -64,7 +67,7 @@ mcf.cmd = [mcf.executable] + ['inp.in']
 
 #507.cactuBSSN
 cactuBSSN = Process() # Update June 7, 2017: This used to be LiveProcess()
-cactuBSSN.executable = 'cactusBSSN' + x86_suffix
+cactuBSSN.executable = spec_prefix + 'cactusBSSN' + x86_suffix
 # TEST CMDS
 #cactuBSSN.cmd = [cactuBSSN.executable]
 #cactuBSSN.input = 'su3imp.in'
@@ -75,7 +78,7 @@ cactuBSSN.cmd = [cactuBSSN.executable] + ['spec_ref.par']
 
 #508.namd
 namd = Process() # Update June 7, 2017: This used to be LiveProcess()
-namd.executable = 'namd' + x86_suffix
+namd.executable = spec_prefix + 'namd' + x86_suffix
 # TEST CMDS
 #namd.cmd = [namd.executable] + ['--input', 'namd.input', '--output', 'namd.out', '--iterations', '1']
 # REF CMDS
@@ -84,7 +87,7 @@ namd.cmd = [namd.executable] + ['--input', 'apoa1.input', '--output', 'apoa1.ref
 
 #510.parest
 parest = Process() # Update June 7, 2017: This used to be LiveProcess()
-parest.executable = 'parest' + x86_suffix
+parest.executable = spec_prefix + 'parest' + x86_suffix
 # TEST CMDS
 #parest.cmd = [parest.executable] + ['--input', 'parest.input', '--output', 'parest.out', '--iterations', '1']
 # REF CMDS
@@ -93,7 +96,7 @@ parest.cmd = [parest.executable] + ['ref.prm']
 
 #511.povray
 povray = Process() # Update June 7, 2017: This used to be LiveProcess()
-povray.executable = 'povray' + x86_suffix
+povray.executable = spec_prefix + 'povray' + x86_suffix
 # TEST CMDS
 #povray.cmd = [povray.executable] + ['SPEC-benchmark-test.ini']
 # REF CMDS
@@ -102,7 +105,7 @@ povray.cmd = [povray.executable] + ['SPEC-benchmark-ref.ini']
 
 #519.lbm
 lbm = Process() # Update June 7, 2017: This used to be LiveProcess()
-lbm.executable = 'lbm' + x86_suffix
+lbm.executable = spec_prefix + 'lbm' + x86_suffix
 # TEST CMDS
 #lbm.cmd = [lbm.executable] + ['20', 'reference.dat', '0', '1', '100_100_130_cf_a.of']
 # REF CMDS
@@ -111,7 +114,7 @@ lbm.cmd = [lbm.executable] + ['3000', 'reference.dat', '0', '0', '100_100_130_ld
 
 #520.omnetpp
 omnetpp = Process() # Update June 7, 2017: This used to be LiveProcess()
-omnetpp.executable = 'omnetpp' + x86_suffix
+omnetpp.executable = spec_prefix + 'omnetpp' + x86_suffix
 # TEST CMDS
 #omnetpp.cmd = [omnetpp.executable] + ['omnetpp.ini']
 # REF CMDS
@@ -120,7 +123,7 @@ omnetpp.cmd = [omnetpp.executable] + ['-c', 'General', '-r', '0']
 
 #521.wrf
 wrf = Process() # Update June 7, 2017: This used to be LiveProcess()
-wrf.executable = 'wrf' + x86_suffix
+wrf.executable = spec_prefix + 'wrf' + x86_suffix
 # TEST CMDS
 #wrf.cmd = [wrf.executable]
 # REF CMDS
@@ -130,7 +133,7 @@ wrf.cmd = [wrf.executable]
 #523.xalancbmk
 ######## NOT WORKING ###########
 xalancbmk = Process() # Update June 7, 2017: This used to be LiveProcess()
-xalancbmk.executable = 'cpuxalan' + x86_suffix
+xalancbmk.executable = spec_prefix + 'cpuxalan' + x86_suffix
 # TEST CMDS
 ######## NOT WORKING ###########
 xalancbmk.cmd = [xalancbmk.executable] + ['-v','t5.xml','xalanc.xsl']
@@ -140,7 +143,7 @@ xalancbmk.cmd = [xalancbmk.executable] + ['-v','t5.xml','xalanc.xsl']
 
 #525.x264
 x264 = Process() # Update June 7, 2017: This used to be LiveProcess()
-x264.executable = 'x264' + x86_suffix
+x264.executable = spec_prefix + 'x264' + x86_suffix
 # TEST CMDS
 #x264.cmd = [x264.executable] + ['test.txt']
 # REF CMDS
@@ -149,7 +152,7 @@ x264.cmd = [x264.executable] + ['--pass','1','--stats','x264_stats.log','--bitra
 
 #526.blender
 blender = Process() # Update June 7, 2017: This used to be LiveProcess()
-blender.executable = 'blender' + x86_suffix
+blender.executable = spec_prefix + 'blender' + x86_suffix
 # TEST CMDS
 #blender.cmd = [blender.executable] + ['test.txt']
 # REF CMDS
@@ -158,7 +161,7 @@ blender.cmd = [blender.executable] + ['sh3_no_char.blend','--render-output','sh3
 
 #527.cam4
 cam4 = Process() # Update June 7, 2017: This used to be LiveProcess()
-cam4.executable = 'cam4' + x86_suffix
+cam4.executable = spec_prefix + 'cam4' + x86_suffix
 # TEST CMDS
 #cam4.cmd = [cam4.executable] + ['test.txt']
 # REF CMDS
@@ -167,7 +170,7 @@ cam4.cmd = [cam4.executable]
 
 #531.deepsjeng
 deepsjeng = Process() # Update June 7, 2017: This used to be LiveProcess()
-deepsjeng.executable = 'deepsjeng' + x86_suffix
+deepsjeng.executable = spec_prefix + 'deepsjeng' + x86_suffix
 # TEST CMDS
 #deepsjeng.cmd = [deepsjeng.executable] + ['test.txt']
 # REF CMDS
@@ -176,7 +179,7 @@ deepsjeng.cmd = [deepsjeng.executable] + ['ref.txt']
 
 #538.imagick
 imagick = Process() # Update June 7, 2017: This used to be LiveProcess()
-imagick.executable = 'imagick' + x86_suffix
+imagick.executable = spec_prefix + 'imagick' + x86_suffix
 # TEST CMDS
 #imagick.cmd = [imagick.executable] + ['test.txt']
 # REF CMDS
@@ -185,7 +188,7 @@ imagick.cmd = [imagick.executable] + ['-limit','disk','0','refrate_input.tga','-
 
 #541.leela
 leela = Process() # Update June 7, 2017: This used to be LiveProcess()
-leela.executable = 'leela' + x86_suffix
+leela.executable = spec_prefix + 'leela' + x86_suffix
 # TEST CMDS
 #leela.cmd = [leela.executable] + ['test.txt']
 # REF CMDS
@@ -194,7 +197,7 @@ leela.cmd = [leela.executable] + ['ref.sgf']
 
 #544.nab
 nab = Process() # Update June 7, 2017: This used to be LiveProcess()
-nab.executable = 'nab' + x86_suffix
+nab.executable = spec_prefix + 'nab' + x86_suffix
 # TEST CMDS
 #nab.cmd = [nab.executable] + ['test.txt']
 # REF CMDS
@@ -203,7 +206,7 @@ nab.cmd = [nab.executable] + ['1am0','1122214447','122']
 
 #549.fotonik3d
 fotonik3d = Process() # Update June 7, 2017: This used to be LiveProcess()
-fotonik3d.executable = 'fotonik3d' + x86_suffix
+fotonik3d.executable = spec_prefix + 'fotonik3d' + x86_suffix
 # TEST CMDS
 #fotonik3d.cmd = [fotonik3d.executable] + ['test.txt']
 # REF CMDS
@@ -212,7 +215,7 @@ fotonik3d.cmd = [fotonik3d.executable]
 
 #554.roms
 roms = Process() # Update June 7, 2017: This used to be LiveProcess()
-roms.executable = 'roms' + x86_suffix
+roms.executable = spec_prefix + 'roms' + x86_suffix
 # TEST CMDS
 #roms.cmd = [roms.executable] + ['test.txt']
 # REF CMDS
@@ -222,7 +225,7 @@ roms.input = ['ocean_benchmark2.in.x']
 
 #557.xz
 xz = Process() # Update June 7, 2017: This used to be LiveProcess()
-xz.executable = 'xz' + x86_suffix
+xz.executable = spec_prefix + 'xz' + x86_suffix
 # TEST CMDS
 #xz.cmd = [xz.executable] + ['test.txt']
 # REF CMDS

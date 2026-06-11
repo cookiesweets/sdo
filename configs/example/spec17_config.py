@@ -318,6 +318,12 @@ else:
     print >> sys.stderr, "Need --benchmark switch to specify SPEC CPU2017 workload. Exiting!\n"
     sys.exit(1)
 
+spec_run_dir = os.environ.get('SPEC17_RUN_DIR')
+if spec_run_dir:
+    process.cwd = spec_run_dir
+else:
+    process.cwd = os.getcwd()
+
 # Set process stdout/stderr
 if options.benchmark_stdout:
     process.output = options.benchmark_stdout

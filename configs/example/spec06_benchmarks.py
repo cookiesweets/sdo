@@ -1,20 +1,21 @@
 import m5
 from m5.objects import *
+import os
 
 ###########################################################
 ##  !! This file is imported by spec06_config.py
 ###########################################################
 
-# These three directory paths are not currently used.
-#gem5_dir = '<FULL_PATH_TO_YOUR_GEM5_INSTALL>'
-#spec_dir = '<FULL_PATH_TO_YOUR_SPEC_CPU2006_INSTALL>'
-#out_dir = '<FULL_PATH_TO_DESIRED_OUTPUT_DIRECTORY>'
+def _dir_prefix(path):
+    if path and not path.endswith(os.sep):
+        return path + os.sep
+    return path
 
-USE_PREFIX = False
-spec_prefix = ''
-x86_suffix = '_base.Xeon-gcc4.3'
-if USE_PREFIX:
-    spec_prefix = '/shared/Jiyong/SPEC2006/benchspec/CPU2006/'
+# The MICRO scripts export SPEC06_RUN_DIR so that the executable path is
+# absolute while benchmark inputs remain relative to the SPEC run directory.
+spec_prefix = _dir_prefix(os.environ.get('SPEC06_EXEC_PREFIX',
+                                         os.environ.get('SPEC06_RUN_DIR', '')))
+x86_suffix = os.environ.get('SPEC06_X86_SUFFIX', '_base.Xeon-gcc4.3')
 
 #'_base.my-alpha'
 

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source "$SCRIPT_DIR/env_MICRO26.sh"
+
+MAX_JOBS=${MAX_JOBS:-4}
+BENCHMARKS=${BENCHMARKS:-"perlbench gcc bwaves mcf cactuBSSN namd parest povray lbm omnetpp wrf xalancbmk x264 blender cam4 deepsjeng imagick leela nab fotonik3d roms xz"}
+SCHEMES=${SCHEMES:-"UnsafeBaseline DelayExecute SDO"}
+THREAT_MODELS=${THREAT_MODELS:-"Spectre Futuristic"}
+STT_VALUES=${STT_VALUES:-"1"}
+IMP_CHANNEL_VALUES=${IMP_CHANNEL_VALUES:-"1"}
+FAIL_LOG=${FAIL_LOG:-$OUTPUT_ROOT/spec17_MICRO26_failures.log}
+
+mkdir -p "$(dirname "$FAIL_LOG")"
+: > "$FAIL_LOG"
+
+throttle() {
+    while [[ "$(jobs -pr | wc -l | tr -d ' ')" -ge "$MAX_JOBS" ]]; do
+        sleep 2
+    done
+}
+
+launch_one() {
+    local bench=$1
+    local scheme=$2
+    local stt=$3
+    local imp=$4
+    local threat=$5
+
+    (
+        "$SCRIPT_DIR/spec17_MICRO26.sh" "$bench" "$scheme" "$stt" "$imp" "$threat" ||
+        echo "FAILED spec17 bench=$bench scheme=$scheme stt=$stt imp=$imp threat=$threat" >> "$FAIL_LOG"
+    ) &
+}
+
+echo "Starting SPEC2017 MICRO26 SDO runs with MAX_JOBS=$MAX_JOBS"
+
+for bench in $BENCHMARKS; do
+    for scheme in $SCHEMES; do
+        if [[ "$scheme" == "UnsafeBaseline" ]]; then
+            throttle
+            launch_one "$bench" "$scheme" 0 0 Spectre
+            continue
+        fi
+        for threat in $THREAT_MODELS; do
+            for stt in $STT_VALUES; do
+                for imp in $IMP_CHANNEL_VALUES; do
+                    throttle
+                    launch_one "$bench" "$scheme" "$stt" "$imp" "$threat"
+                done
+            done
+        done
+    done
+done
+
+wait
+
+if [[ -s "$FAIL_LOG" ]]; then
+    echo "Some SPEC2017 runs failed:"
+    cat "$FAIL_LOG"
+    exit 1
+fi
+
+echo "All SPEC2017 MICRO26 SDO runs completed."
