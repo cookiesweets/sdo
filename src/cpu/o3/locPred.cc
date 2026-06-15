@@ -176,7 +176,9 @@ LocPred_greedy::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &chosen_pred
                                           //history[pred_entry_idx].begin() + history_idx + 1 + historyLength);
 
     //history[pred_entry_idx][history_idx] = pred;
-    CacheLevel_t pred = *std::max_element(history[pred_entry_idx].begin(), history[pred_entry_idx].end());
+    CacheLevel_t pred = foldCacheLevelForTwoLevelSDO(
+        *std::max_element(history[pred_entry_idx].begin(),
+                          history[pred_entry_idx].end()));
 
     return pred;
 }
@@ -184,6 +186,8 @@ LocPred_greedy::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &chosen_pred
 int
 LocPred_greedy::update(Addr load_PC, InstSeqNum load_sn, CacheLevel_t actual_level)
 {
+    actual_level = foldCacheLevelForTwoLevelSDO(actual_level);
+
     DPRINTF(LocPred, "greedy: Update(%lu, %ld, %d)\n", load_PC, load_sn, actual_level);
 
     unsigned pred_entry_idx = getLocalIndex(load_PC);
@@ -282,12 +286,14 @@ LocPred_hysteresis::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &chosen_
     else
         pred = level1 > level2 ? level1 : level2;
 
-    return pred;
+    return foldCacheLevelForTwoLevelSDO(pred);
 }
 
 int
 LocPred_hysteresis::update(Addr load_PC, InstSeqNum load_sn, CacheLevel_t actual_level)
 {
+    actual_level = foldCacheLevelForTwoLevelSDO(actual_level);
+
     // Update the local predictor.
     unsigned pred_entry_idx = getLocalIndex(load_PC);
 
@@ -385,7 +391,8 @@ LocPred_local::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &chosen_pred)
     }
 
     // find the prediction in prediction_table
-    CacheLevel_t pred = prediction_table[pred_entry_idx][prediction_table_idx];
+    CacheLevel_t pred = foldCacheLevelForTwoLevelSDO(
+        prediction_table[pred_entry_idx][prediction_table_idx]);
 
     history[pred_entry_idx][history_idx] = pred;
 
@@ -395,6 +402,8 @@ LocPred_local::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &chosen_pred)
 int
 LocPred_local::update(Addr load_PC, InstSeqNum load_sn, CacheLevel_t actual_level)
 {
+    actual_level = foldCacheLevelForTwoLevelSDO(actual_level);
+
     DPRINTF(LocPred, "local: update(%lu, %ld, %d)\n", load_PC, load_sn, actual_level);
 
     unsigned pred_entry_idx = getLocalIndex(load_PC);
@@ -541,7 +550,7 @@ LocPred_loop::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &chosen_pred)
 
     CacheLevel_t pred;
     if (curr_loop_len % loop_count_table[pred_entry_idx] == 0) {
-        pred = pred_level_table[pred_entry_idx];
+        pred = foldCacheLevelForTwoLevelSDO(pred_level_table[pred_entry_idx]);
     }
     else {
         pred = Cache_L1;
@@ -555,6 +564,8 @@ LocPred_loop::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &chosen_pred)
 int
 LocPred_loop::update(Addr load_PC, InstSeqNum load_sn, CacheLevel_t actual_level)
 {
+    actual_level = foldCacheLevelForTwoLevelSDO(actual_level);
+
     DPRINTF(LocPred, "loop: update(%lu, %ld, %ld)\n", load_PC, load_sn, actual_level);
 
     unsigned pred_entry_idx = getLocalIndex(load_PC);
@@ -734,8 +745,10 @@ LocPred_tournament_2Way::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &ch
 {
     DPRINTF(LocPred, "tournament_2way: prepare(%lu, %ld)\n", load_PC, load_sn);
 
-    CacheLevel_t pred1_prediction = pred1->predict(load_PC, load_sn, chosen_pred);
-    CacheLevel_t pred2_prediction = pred2->predict(load_PC, load_sn, chosen_pred);
+    CacheLevel_t pred1_prediction =
+        foldCacheLevelForTwoLevelSDO(pred1->predict(load_PC, load_sn, chosen_pred));
+    CacheLevel_t pred2_prediction =
+        foldCacheLevelForTwoLevelSDO(pred2->predict(load_PC, load_sn, chosen_pred));
 
     unsigned pred_entry_idx = getLocalIndex(load_PC);
     int conf1 = pred1_conf[pred_entry_idx];
@@ -743,23 +756,27 @@ LocPred_tournament_2Way::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &ch
 
     if (conf1 >= conf2) {
         chosen_pred = pred1->getPredType();
-        return pred1_prediction;
+        return foldCacheLevelForTwoLevelSDO(pred1_prediction);
     }
     else {
         chosen_pred = pred2->getPredType();
-        return pred2_prediction;
+        return foldCacheLevelForTwoLevelSDO(pred2_prediction);
     }
 }
 
 int
 LocPred_tournament_2Way::update(Addr load_PC, InstSeqNum load_sn, CacheLevel_t actual_level)
 {
+    actual_level = foldCacheLevelForTwoLevelSDO(actual_level);
+
     DPRINTF(LocPred, "tournament_2way: update(%lu, %ld, %ld)\n", load_PC, load_sn, actual_level);
 
     LocPred_t predtype;
 
-    CacheLevel_t pred1_prediction = pred1->predict(load_PC, load_sn, predtype);
-    CacheLevel_t pred2_prediction = pred2->predict(load_PC, load_sn, predtype);
+    CacheLevel_t pred1_prediction =
+        foldCacheLevelForTwoLevelSDO(pred1->predict(load_PC, load_sn, predtype));
+    CacheLevel_t pred2_prediction =
+        foldCacheLevelForTwoLevelSDO(pred2->predict(load_PC, load_sn, predtype));
 
 
     int pred1_update_on_commit = pred1->update(load_PC, load_sn, actual_level);
@@ -898,9 +915,12 @@ LocPred_tournament_3Way::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &ch
 {
     DPRINTF(LocPred, "tournament_3way: prepare(%lu, %ld)\n", load_PC, load_sn);
 
-    CacheLevel_t pred1_prediction = pred1->predict(load_PC, load_sn, chosen_pred);
-    CacheLevel_t pred2_prediction = pred2->predict(load_PC, load_sn, chosen_pred);
-    CacheLevel_t pred3_prediction = pred3->predict(load_PC, load_sn, chosen_pred);
+    CacheLevel_t pred1_prediction =
+        foldCacheLevelForTwoLevelSDO(pred1->predict(load_PC, load_sn, chosen_pred));
+    CacheLevel_t pred2_prediction =
+        foldCacheLevelForTwoLevelSDO(pred2->predict(load_PC, load_sn, chosen_pred));
+    CacheLevel_t pred3_prediction =
+        foldCacheLevelForTwoLevelSDO(pred3->predict(load_PC, load_sn, chosen_pred));
 
     unsigned pred_entry_idx = getLocalIndex(load_PC);
     int conf1 = pred1_conf[pred_entry_idx];
@@ -909,28 +929,33 @@ LocPred_tournament_3Way::predict(Addr load_PC, InstSeqNum load_sn, LocPred_t &ch
 
     if (conf1 >= conf2 && conf1 >= conf3) {
         chosen_pred = pred1->getPredType();
-        return pred1_prediction;
+        return foldCacheLevelForTwoLevelSDO(pred1_prediction);
     }
     else if (conf2 >= conf1 && conf2 >= conf3) {
         chosen_pred = pred2->getPredType();
-        return pred2_prediction;
+        return foldCacheLevelForTwoLevelSDO(pred2_prediction);
     }
     else {
         chosen_pred = pred3->getPredType();
-        return pred3_prediction;
+        return foldCacheLevelForTwoLevelSDO(pred3_prediction);
     }
 }
 
 int
 LocPred_tournament_3Way::update(Addr load_PC, InstSeqNum load_sn, CacheLevel_t actual_level)
 {
+    actual_level = foldCacheLevelForTwoLevelSDO(actual_level);
+
     DPRINTF(LocPred, "tournament_2way: update(%lu, %ld, %ld)\n", load_PC, load_sn, actual_level);
 
     LocPred_t predtype;
 
-    CacheLevel_t pred1_prediction = pred1->predict(load_PC, load_sn, predtype);
-    CacheLevel_t pred2_prediction = pred2->predict(load_PC, load_sn, predtype);
-    CacheLevel_t pred3_prediction = pred3->predict(load_PC, load_sn, predtype);
+    CacheLevel_t pred1_prediction =
+        foldCacheLevelForTwoLevelSDO(pred1->predict(load_PC, load_sn, predtype));
+    CacheLevel_t pred2_prediction =
+        foldCacheLevelForTwoLevelSDO(pred2->predict(load_PC, load_sn, predtype));
+    CacheLevel_t pred3_prediction =
+        foldCacheLevelForTwoLevelSDO(pred3->predict(load_PC, load_sn, predtype));
 
     int pred1_update_on_commit = pred1->update(load_PC, load_sn, actual_level);
     int pred2_update_on_commit = pred2->update(load_PC, load_sn, actual_level);

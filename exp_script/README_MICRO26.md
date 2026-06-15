@@ -39,7 +39,7 @@ export CKPT_PATH=/root/Benchmark/spare_ckpt
 export OUTPUT_ROOT=$GEM5_PATH/output/MICRO26
 
 BENCHMARKS="mcf lbm xz" SCHEMES="UnsafeBaseline DelayExecute SDO" ./runall_spec17_MICRO26.sh
-THREAT_MODELS="Spectre" STT_VALUES="1" IMP_CHANNEL_VALUES="1" ./runall_spec06_MICRO26.sh
+THREAT_MODELS="Spectre" STT_VALUES="0 1" IMP_CHANNEL_VALUES="0 1" ./runall_spec06_MICRO26.sh
 PRED_TYPE=tournament_2way SUBPRED1_TYPE=greedy SUBPRED2_TYPE=loop PRED_OPTION=0 ./spec17_MICRO26.sh mcf SDO
 GEM5_DEBUG_FLAGS=SpecBuffer,MemSpecBuffer,LSQUnit,LSQ ./spec17_MICRO26.sh mcf SDO
 DRY_RUN=1 USE_CHECKPOINT=0 ./spec06_MICRO26.sh mcf SDO
@@ -48,9 +48,12 @@ DRY_RUN=1 USE_CHECKPOINT=0 ./spec06_MICRO26.sh mcf SDO
 Default scheme coverage:
 
 - `UnsafeBaseline`: unprotected baseline, no `--threat_model` passed.
-- `DelayExecute`: STT-style delayed execution with `--STT=1 --impChannel=1`.
-- `SDO`: SDO with `tournament_2way(greedy, loop)`, `--pred_option=0`, and
+- `DelayExecute`: STT-style delayed execution for `STT0_Impl0`,
+  `STT1_Impl0`, and `STT1_Impl1`.
+- `SDO`: SDO for `STT0_Impl0`, `STT1_Impl0`, and `STT1_Impl1`, using
+  `tournament_2way(greedy, loop)`, `--pred_option=0`, and
   `--TLB_defense=SDO`.
+- `STT0_Impl1` is skipped because it is an invalid configuration.
 
 The SPEC benchmark modules also honor:
 

@@ -1762,7 +1762,8 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
 
     /*** Jiyong, MLDOM: collect location prediction stats ***/
     // location predictor stats
-    if (head_inst->isLoad() && head_inst->pred_level != -1) {
+    if (head_inst->isLoad() && head_inst->oblS_Sent &&
+        head_inst->pred_level != -1) {
         if (head_inst->pred_level == 0) {    // Jiyong: cache level 0
             numL0IsPredicted++;
             if (head_inst->oblS_Hit_SB) {

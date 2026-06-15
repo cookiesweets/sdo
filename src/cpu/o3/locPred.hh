@@ -120,7 +120,7 @@ class LocPred_random : public LocPred_BaseType {
           case 1:
             return Cache_L2;
           case 2:
-            return Cache_L3;
+            return foldCacheLevelForTwoLevelSDO(Cache_L3);
           case 3:
             return DRAM;
           default:
@@ -176,7 +176,10 @@ class LocPred_static : public LocPred_BaseType {
   public:
     LocPred_static() : LocPred_BaseType(Static), prediction(Cache_L2) {}  // default is L2 for best perf
 
-    LocPred_static(CacheLevel_t pred_level) : LocPred_BaseType(Static), prediction(pred_level) {}
+    LocPred_static(CacheLevel_t pred_level)
+        : LocPred_BaseType(Static),
+          prediction(foldCacheLevelForTwoLevelSDO(pred_level))
+    {}
 
     ~LocPred_static() {}
 

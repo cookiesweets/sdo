@@ -8,8 +8,8 @@ MAX_JOBS=${MAX_JOBS:-4}
 BENCHMARKS=${BENCHMARKS:-"perlbench bzip2 gcc bwaves gamess mcf milc zeusmp gromacs cactusADM leslie3d namd gobmk soplex povray calculix hmmer sjeng GemsFDTD libquantum h264ref tonto lbm omnetpp astar wrf sphinx3 xalancbmk"}
 SCHEMES=${SCHEMES:-"UnsafeBaseline DelayExecute SDO"}
 THREAT_MODELS=${THREAT_MODELS:-"Spectre Futuristic"}
-STT_VALUES=${STT_VALUES:-"1"}
-IMP_CHANNEL_VALUES=${IMP_CHANNEL_VALUES:-"1"}
+STT_VALUES=${STT_VALUES:-"0 1"}
+IMP_CHANNEL_VALUES=${IMP_CHANNEL_VALUES:-"0 1"}
 FAIL_LOG=${FAIL_LOG:-$OUTPUT_ROOT/spec06_MICRO26_failures.log}
 
 mkdir -p "$(dirname "$FAIL_LOG")"
@@ -46,6 +46,9 @@ for bench in $BENCHMARKS; do
         for threat in $THREAT_MODELS; do
             for stt in $STT_VALUES; do
                 for imp in $IMP_CHANNEL_VALUES; do
+                    if [[ "$stt" == "0" && "$imp" == "1" ]]; then
+                        continue
+                    fi
                     throttle
                     launch_one "$bench" "$scheme" "$stt" "$imp" "$threat"
                 done
