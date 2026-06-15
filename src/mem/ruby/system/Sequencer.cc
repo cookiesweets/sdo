@@ -49,6 +49,47 @@
 
 using namespace std;
 
+namespace
+{
+
+int
+visibleSDOLevel(int rubyLevel)
+{
+    return rubyLevel == 2 ? 3 : rubyLevel;
+}
+
+void
+markSDOHitLevel(PacketPtr pkt, int rubyLevel)
+{
+    switch (visibleSDOLevel(rubyLevel)) {
+      case 0:
+        pkt->setL0_Hit();
+        break;
+      case 1:
+        pkt->setL1_Hit();
+        break;
+      case 3:
+        pkt->setMem_Hit();
+        break;
+      default:
+        panic("Unknown SDO hit level %d\n", rubyLevel);
+    }
+}
+
+int
+packetSDOHitLevelOr(PacketPtr pkt, int defaultRubyLevel)
+{
+    if (pkt->isSB_Hit() || pkt->isL0_Hit())
+        return 0;
+    if (pkt->isL1_Hit())
+        return 1;
+    if (pkt->isMem_Hit())
+        return 3;
+    return visibleSDOLevel(defaultRubyLevel);
+}
+
+} // anonymous namespace
+
 Sequencer *
 RubySequencerParams::create()
 {
@@ -868,9 +909,9 @@ Sequencer::readCallback(Addr address, DataBlock& data,
             else if (dependentPkt->isSpec()) {
                 DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
                         curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                dependentPkt->fromLevel = 0;
+                dependentPkt->fromLevel = packetSDOHitLevelOr(dependentPkt, 0);
                 dependentPkt->isFinalPacket = true;
-                dependentPkt->setL0_Hit();
+                markSDOHitLevel(dependentPkt, 0);
             }
             else
                 assert(0);
@@ -1296,17 +1337,19 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
 
             // write and return the dependentPkt if any
             for (auto& dependentPkt : srequest->dependentRequests) {
-                dependentPkt->fromLevel     = 0;
+                dependentPkt->fromLevel     = packetSDOHitLevelOr(dependentPkt, fromLevel);
                 dependentPkt->isFinalPacket = true;
 
                 if (hit && makeLineAddress(pkt->getAddr()) == makeLineAddress(dependentPkt->getAddr())) {
                     DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
                             curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                    dependentPkt->setL0_Hit();
+                    markSDOHitLevel(dependentPkt, fromLevel);
                     memcpy(dependentPkt->getPtr<uint8_t>(),
                            data.getData(getOffset(dependentPkt->getAddr()), dependentPkt->getSize()),
                            dependentPkt->getSize());
                 }
+
+                dependentPkt->fromLevel = packetSDOHitLevelOr(dependentPkt, fromLevel);
 
                 ruby_hit_callback(dependentPkt);
             }
@@ -1331,7 +1374,7 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
                 if (hit && makeLineAddress(pkt->getAddr()) == makeLineAddress(dependentPkt->getAddr())) {
                     DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
                             curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                    dependentPkt->setL0_Hit();
+                    markSDOHitLevel(dependentPkt, fromLevel);
                     memcpy(dependentPkt->getPtr<uint8_t>(),
                            data.getData(getOffset(dependentPkt->getAddr()), dependentPkt->getSize()),
                            dependentPkt->getSize());
@@ -1348,17 +1391,19 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
 
             // write and return the dependentPkt if any
             for (auto& dependentPkt : srequest->dependentRequests) {
-                dependentPkt->fromLevel     = 0;
+                dependentPkt->fromLevel     = packetSDOHitLevelOr(dependentPkt, fromLevel);
                 dependentPkt->isFinalPacket = true;
 
                 if (hit && makeLineAddress(pkt->getAddr()) == makeLineAddress(dependentPkt->getAddr())) {
                     DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
                             curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                    dependentPkt->setL0_Hit();
+                    markSDOHitLevel(dependentPkt, fromLevel);
                     memcpy(dependentPkt->getPtr<uint8_t>(),
                            data.getData(getOffset(dependentPkt->getAddr()), dependentPkt->getSize()),
                            dependentPkt->getSize());
                 }
+
+                dependentPkt->fromLevel = packetSDOHitLevelOr(dependentPkt, fromLevel);
 
                 ruby_hit_callback(dependentPkt);
             }
@@ -1382,7 +1427,7 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
                 if (hit && makeLineAddress(pkt->getAddr()) == makeLineAddress(dependentPkt->getAddr())) {
                     DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
                             curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                    dependentPkt->setL0_Hit();
+                    markSDOHitLevel(dependentPkt, fromLevel);
                     memcpy(dependentPkt->getPtr<uint8_t>(),
                            data.getData(getOffset(dependentPkt->getAddr()), dependentPkt->getSize()),
                            dependentPkt->getSize());
@@ -1399,17 +1444,19 @@ Sequencer::hitCallbackObliv(SequencerRequest* srequest, bool hit, DataBlock& dat
 
             // write and return the dependentPkt if any
             for (auto& dependentPkt : srequest->dependentRequests) {
-                dependentPkt->fromLevel     = 0;
+                dependentPkt->fromLevel     = packetSDOHitLevelOr(dependentPkt, fromLevel);
                 dependentPkt->isFinalPacket = true;
 
                 if (hit && makeLineAddress(pkt->getAddr()) == makeLineAddress(dependentPkt->getAddr())) {
                     DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
                             curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                    dependentPkt->setL0_Hit();
+                    markSDOHitLevel(dependentPkt, fromLevel);
                     memcpy(dependentPkt->getPtr<uint8_t>(),
                            data.getData(getOffset(dependentPkt->getAddr()), dependentPkt->getSize()),
                            dependentPkt->getSize());
                 }
+
+                dependentPkt->fromLevel = packetSDOHitLevelOr(dependentPkt, fromLevel);
 
                 ruby_hit_callback(dependentPkt);
             }
@@ -1568,7 +1615,7 @@ Sequencer::makeRequest(PacketPtr pkt)
                 return RequestStatus_Issued;
             }
             else if (makeLineAddress(reqAddr) == makeLineAddress(src_sbe.blocks[1].reqAddress)) {
-                if (src_sbe.blocks[1].data_hit) { // specbuf entry must be valid
+                if (!src_sbe.blocks[1].data_hit) { // specbuf entry must be valid
                     DPRINTFR(JY_Ruby, "data is not ready\n");
                     return RequestStatus_Aliased;
                 }

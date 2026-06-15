@@ -40,6 +40,42 @@ validate_threat() {
     esac
 }
 
+spec06_plotted_benchmarks() {
+    echo "perlbench bzip2 gcc mcf milc namd gobmk povray libquantum h264ref omnetpp astar sphinx3"
+}
+
+spec17_plotted_benchmarks() {
+    echo "cactuBSSN namd parest povray lbm x264 imagick leela nab xz"
+}
+
+is_word_in_list() {
+    local needle=$1
+    shift
+    local item
+    for item in "$@"; do
+        if [[ "$item" == "$needle" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+validate_plotted_spec06() {
+    local benchmark=$1
+    # shellcheck disable=SC2046
+    if ! is_word_in_list "$benchmark" $(spec06_plotted_benchmarks); then
+        die "SPEC2006 benchmark '$benchmark' is outside the plotted MICRO26 set"
+    fi
+}
+
+validate_plotted_spec17() {
+    local benchmark=$1
+    # shellcheck disable=SC2046
+    if ! is_word_in_list "$benchmark" $(spec17_plotted_benchmarks); then
+        die "SPEC2017 benchmark '$benchmark' is outside the plotted MICRO26 set"
+    fi
+}
+
 spec06_code() {
     case "$1" in
         perlbench) echo 400.perlbench ;;

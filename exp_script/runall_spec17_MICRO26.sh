@@ -3,9 +3,10 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 source "$SCRIPT_DIR/env_MICRO26.sh"
+source "$SCRIPT_DIR/common_MICRO26.sh"
 
 MAX_JOBS=${MAX_JOBS:-4}
-BENCHMARKS=${BENCHMARKS:-"perlbench gcc bwaves mcf cactuBSSN namd parest povray lbm omnetpp wrf xalancbmk x264 blender cam4 deepsjeng imagick leela nab fotonik3d roms xz"}
+BENCHMARKS=${BENCHMARKS:-$(spec17_plotted_benchmarks)}
 SCHEMES=${SCHEMES:-"UnsafeBaseline DelayExecute SDO"}
 THREAT_MODELS=${THREAT_MODELS:-"Spectre Futuristic"}
 STT_VALUES=${STT_VALUES:-"0 1"}
@@ -14,6 +15,10 @@ FAIL_LOG=${FAIL_LOG:-$OUTPUT_ROOT/spec17_MICRO26_failures.log}
 
 mkdir -p "$(dirname "$FAIL_LOG")"
 : > "$FAIL_LOG"
+
+for bench in $BENCHMARKS; do
+    validate_plotted_spec17 "$bench"
+done
 
 throttle() {
     while [[ "$(jobs -pr | wc -l | tr -d ' ')" -ge "$MAX_JOBS" ]]; do

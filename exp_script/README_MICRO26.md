@@ -28,6 +28,19 @@ MAX_JOBS=4 ./runall_spec17_MICRO26.sh
 MAX_JOBS=4 ./runall_spec06_MICRO26.sh
 ```
 
+By default, the runall scripts are limited to the plotted MICRO26 benchmark set.
+SPEC2006 runs:
+
+```text
+perlbench bzip2 gcc mcf milc namd gobmk povray libquantum h264ref omnetpp astar sphinx3
+```
+
+SPEC2017 runs:
+
+```text
+cactuBSSN namd parest povray lbm x264 imagick leela nab xz
+```
+
 Useful overrides:
 
 ```bash

@@ -25,14 +25,15 @@ THREAT_MODEL=${5:-Spectre}
 validate_scheme "$SCHEME"
 validate_bool STT "$STT"
 validate_bool impChannel "$IMP_CHANNEL"
-if [[ "$STT" == "0" && "$IMP_CHANNEL" == "1" ]]; then
-    die "STT0_Impl1 is invalid; use STT0_Impl0, STT1_Impl0, or STT1_Impl1"
-fi
+validate_plotted_spec06 "$BENCHMARK"
 if [[ "$SCHEME" == "UnsafeBaseline" ]]; then
     STT=0
     IMP_CHANNEL=0
 else
     validate_threat "$THREAT_MODEL"
+    if [[ "$STT" == "0" && "$IMP_CHANNEL" == "1" ]]; then
+        die "STT0_Impl1 is invalid; use STT0_Impl0, STT1_Impl0, or STT1_Impl1"
+    fi
 fi
 
 require_var GEM5_PATH
