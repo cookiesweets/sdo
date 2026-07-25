@@ -663,6 +663,13 @@ class Packet : public Printable
     void setL0_Hit()        { isL0Hit  = true; }
     void setL1_Hit()        { isL1Hit  = true; }
     void setMem_Hit()       { isMemHit = true; }
+    void clearMLDOMHitStatus()
+    {
+        isSBHit = false;
+        isL0Hit = false;
+        isL1Hit = false;
+        isMemHit = false;
+    }
 
     void setExternalEviction()
     {

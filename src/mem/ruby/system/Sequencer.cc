@@ -88,6 +88,27 @@ packetSDOHitLevelOr(PacketPtr pkt, int defaultRubyLevel)
     return visibleSDOLevel(defaultRubyLevel);
 }
 
+int
+callbackSDOHitLevel(bool hitAtL0, bool hitAtL1, bool hitAtMem,
+                    int defaultRubyLevel = 0)
+{
+    if (hitAtL0)
+        return 0;
+    if (hitAtL1)
+        return 1;
+    if (hitAtMem)
+        return 3;
+    return visibleSDOLevel(defaultRubyLevel);
+}
+
+void
+overwriteSDOHitLevel(PacketPtr pkt, int rubyLevel)
+{
+    pkt->clearMLDOMHitStatus();
+    pkt->fromLevel = visibleSDOLevel(rubyLevel);
+    markSDOHitLevel(pkt, rubyLevel);
+}
+
 } // anonymous namespace
 
 Sequencer *
@@ -476,8 +497,8 @@ Sequencer::insertSpecldRequest(PacketPtr pkt, RubyRequestType request_type)
                 DPRINTF(JY_Ruby, "%10s the request [sn=%lli] is alised with an older, inflight load [sn=%lli].\n", curTick(), pkt->seqNum, specld_req->pkt->seqNum);
                 specld_req->dependentRequests.push_back(pkt);
                 DPRINTF(JY_Ruby, "%10s the request [sn=%lli] has a dependent pkt [sn=%lli]\n", curTick(), specld_req->pkt->seqNum, pkt->seqNum);
+                return RequestStatus_Merged;
             }
-            return RequestStatus_Merged;
         }
         DPRINTF(JY_Ruby, "%10s the request [sn=%lli] doesn't find inflight load idx=%d\n", curTick(), pkt->seqNum, pkt->aliased_reqIdx);
     }
@@ -860,6 +881,8 @@ Sequencer::readCallback(Addr address, DataBlock& data,
         pkt->fromLevel = 3;
     }
 
+    const int responseLevel = callbackSDOHitLevel(hitAtL0, hitAtL1, hitAtMem);
+
     if (pkt->isSpec()) {
         assert(!pkt->onlyAccessSpecBuf());
         // Jiyong: remove SpecBuffer related code
@@ -900,6 +923,9 @@ Sequencer::readCallback(Addr address, DataBlock& data,
 
     if (RubySystem::getMLDOMEnabled() && request->m_type == RubyRequestType_LD) {
         for (auto& dependentPkt : request->dependentRequests) {
+            dependentPkt->isFinalPacket = true;
+            overwriteSDOHitLevel(dependentPkt, responseLevel);
+
             if (dependentPkt->isExpose())
                 DPRINTFR(JY_Ruby, "%10s Merged Expose callback (sn:%lli, idx=%d-%d, addr=%#x)\n", 
                         curTick(), dependentPkt->seqNum, dependentPkt->reqIdx, dependentPkt->isFirst()? 0 : 1, printAddress(dependentPkt->getAddr()));
@@ -909,9 +935,6 @@ Sequencer::readCallback(Addr address, DataBlock& data,
             else if (dependentPkt->isSpec()) {
                 DPRINTF(JY_Ruby, "%10s pkt [sn=%lli, addr=%#x] also writes its dependent pkt [sn=%lli, addr=%#x]\n",
                         curTick(), pkt->seqNum, pkt->getAddr(), dependentPkt->seqNum, dependentPkt->getAddr());
-                dependentPkt->fromLevel = packetSDOHitLevelOr(dependentPkt, 0);
-                dependentPkt->isFinalPacket = true;
-                markSDOHitLevel(dependentPkt, 0);
             }
             else
                 assert(0);
