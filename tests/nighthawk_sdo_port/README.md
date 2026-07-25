@@ -19,6 +19,32 @@ From the repository root:
 python3 tests/nighthawk_sdo_port/test_merged_response_metadata.py
 ```
 
+## Compile-only gate
+
+`compile_x86_mesi_two_level.sh` is a fail-closed compile driver for the
+candidate Two-Level port. It accepts only a new absolute build root and a new
+absolute run directory, refuses dirty source by default, caps build parallelism
+at 32, and builds only `X86_MESI_Two_Level/gem5.opt`. Workload and checkpoint
+arguments are intentionally unsupported.
+
+Run it only through the baseline host's resource-guarded sidecar lane, after a
+fresh launch decision is `allow`:
+
+```sh
+tests/nighthawk_sdo_port/compile_x86_mesi_two_level.sh \
+  --build-root /dedicated/sidecar/build/sdo-COMMIT-UTC \
+  --run-dir /dedicated/sidecar/runs/sdo-compile-COMMIT-UTC \
+  --jobs 16
+```
+
+The run directory records the source commit/branch/dirty state, submodules,
+host/kernel, pre-launch `MemAvailable`, SCons and compiler versions, exact
+shell-escaped command, start and end time, exit status, binary path, and binary
+SHA-256. The commit, memory sample, target, and command are also printed before
+SCons starts. A compile `PASS` proves only that the selected Two-Level target
+produced a binary; it does not establish the source contracts below or any
+runtime SDO semantics.
+
 The test uses only the Python standard library and is compatible with Python
 3.5. It intentionally uses no f-strings, variable annotations, or third-party
 packages.

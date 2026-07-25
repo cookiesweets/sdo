@@ -576,3 +576,9 @@ establish:
 
 Until those gates pass, label the implementation
 **“candidate Two-Level SDO port”**, not **“exact SDO reproduction.”**
+
+The repository now includes the fail-closed compile-only driver
+`tests/nighthawk_sdo_port/compile_x86_mesi_two_level.sh`. It preserves a unique
+manifest and binary hash when run, but the Stage-B compile gate remains
+**NOT RUN**: no binary, boot, workload, or checkpoint result is claimed by this
+source-only addition.
