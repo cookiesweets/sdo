@@ -99,6 +99,7 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
                                       send_evictions = send_evicts(options),
                                       prefetcher = prefetcher,
                                       ruby_system = ruby_system,
+                                      enable_MLDOM = ruby_system.enable_MLDOM,
                                       clk_domain = clk_domain,
                                       transitions_per_cycle = options.ports,
                                       enable_prefetch = options.enable_prefetch)

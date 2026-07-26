@@ -49,6 +49,7 @@ from m5.util import addToPath, fatal
 
 from common import ObjectList
 from common import MemConfig
+from common.SDOConfig import is_sdo_enabled
 
 from topologies import *
 from network import Network
@@ -144,6 +145,7 @@ def create_system(options, full_system, system, piobus = None, dma_ports = []):
 
     system.ruby = RubySystem()
     ruby = system.ruby
+    ruby.enable_MLDOM = is_sdo_enabled(options)
 
     # Create the network object
     (network, IntLinkClass, ExtLinkClass, RouterClass, InterfaceClass) = \
@@ -185,7 +187,6 @@ def create_system(options, full_system, system, piobus = None, dma_ports = []):
     setup_memory_controllers(system, ruby, dir_cntrls, options)
 
     # Jiyong, MLDOM
-    ruby.enable_MLDOM = (options.scheme == "SDO")
     ruby.enable_OblS_contention = options.enable_OblS_contention
 
     # Connect the cpu sequencers and the piobus
@@ -232,6 +233,8 @@ def create_directories(options, mem_ranges, ruby_system):
         dir_cntrl.version = i
         dir_cntrl.directory = RubyDirectoryMemory()
         dir_cntrl.ruby_system = ruby_system
+        # The directory owns the memory-response AbstractController path.
+        dir_cntrl.enable_MLDOM = ruby_system.enable_MLDOM
         dir_cntrl.addr_ranges = dir_ranges
 
         exec("ruby_system.dir_cntrl%d = dir_cntrl" % i)

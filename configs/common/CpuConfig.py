@@ -41,6 +41,8 @@ import inspect
 import sys
 from textwrap import TextWrapper
 
+from common.SDOConfig import is_sdo_enabled
+
 # Dictionary of mapping names of real CPU models to classes.
 _cpu_classes = {}
 
@@ -123,6 +125,8 @@ def config_scheme(cpu_cls, cpu_list, options):
                 % (options.STT, options.impChannel)
             print "**********"
 
+        sdo_enabled = is_sdo_enabled(options)
+
         for cpu in cpu_list:
             if len(options.scheme) != 0:
                 cpu.scheme = options.scheme
@@ -174,11 +178,10 @@ def config_scheme(cpu_cls, cpu_list, options):
                 cpu.genHitTrace_WkldName = options.genHitTrace_WkldName
 
             ## Jiyong, SDO configs
-            if options.scheme == "SDO":
-                cpu.enable_MLDOM = True
+            cpu.enable_MLDOM = sdo_enabled
+            if sdo_enabled:
                 print "### SDO is enabled"
             else:
-                cpu.enable_MLDOM = False
                 print "### SDO is disabled"
 
             if options.pred_type:

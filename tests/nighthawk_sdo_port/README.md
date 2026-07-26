@@ -75,6 +75,31 @@ failure: the exactly-once callback pairing verifies whether each ultimately
 tracked request completed. This is a directed runtime accounting check, not a
 proof that every possible squash, alias, or coherence ordering is correct.
 
+## SDO configuration-consistency gate
+
+The SDO flag has distinct CPU, RubySystem, and Ruby-controller parameters.
+Audit every rebuilt run's generated `config.ini` so a controller cannot
+silently retain its fail-closed default:
+
+```sh
+python3 tests/nighthawk_sdo_port/audit_mldom_config.py \
+  --expect enabled /path/to/sdo-run/config.ini
+python3 tests/nighthawk_sdo_port/audit_mldom_config.py \
+  --expect disabled /path/to/non-sdo-run/config.ini
+```
+
+The audit requires and checks every CPU, the RubySystem, every L1 controller,
+and every Directory controller. It also verifies that enabled CPU sections
+name the exact `SDO` scheme and rejects missing sections, missing flags,
+non-canonical booleans, or any disagreement. The Directory check is required
+because it owns the Two-Level memory-response `AbstractController` path.
+
+Run the source and synthetic-config regressions with:
+
+```sh
+python3 tests/nighthawk_sdo_port/test_mldom_config.py
+```
+
 ## Contract covered
 
 The regression reads, but never modifies:
