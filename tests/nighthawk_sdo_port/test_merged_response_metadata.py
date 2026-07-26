@@ -1,12 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 #
 # Source-contract tests for the MESI_Two_Level SDO merged-response path.
 #
-# Keep this file compatible with Python 3.5: standard library only, no
-# annotations, no f-strings, and no newer unittest helpers.
+# Keep this file compatible with Python 2.7 and Python 3.5: standard library
+# only, no annotations, no f-strings, and no newer unittest helpers.
 
 from __future__ import print_function
 
+import io
 import os
 import re
 import unittest
@@ -33,7 +34,7 @@ class ContractExtractionError(AssertionError):
 
 def read_source(path):
     try:
-        with open(path, "r", encoding="utf-8") as source_file:
+        with io.open(path, "r", encoding="utf-8") as source_file:
             return source_file.read()
     except IOError as error:
         raise ContractExtractionError(
