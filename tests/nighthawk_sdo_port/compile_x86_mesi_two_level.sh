@@ -244,7 +244,7 @@ mkdir -p "$(dirname "$BUILD_ROOT")" "$(dirname "$RUN_DIR")"
 mkdir "$BUILD_ROOT"
 mkdir "$RUN_DIR"
 
-git -C "$SOURCE_ROOT" status --porcelain=v1 >"$RUN_DIR/git_status.txt"
+git -C "$SOURCE_ROOT" status --porcelain >"$RUN_DIR/git_status.txt"
 git -C "$SOURCE_ROOT" submodule status --recursive \
     >"$RUN_DIR/submodules.txt" 2>&1 || true
 
