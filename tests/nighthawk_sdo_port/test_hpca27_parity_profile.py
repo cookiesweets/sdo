@@ -475,6 +475,25 @@ class CanonicalRunnerContractTest(unittest.TestCase):
             relative,
         )
 
+    def test_runner_identity_binds_evidence_class_flags(self):
+        source = read_source(
+            "exp_script/weekend_campaign/"
+            "run_nighthawk_checkpoint_job.py"
+        )
+        self.assertIn('"evidence_class": args.evidence_class', source)
+        self.assertIn(
+            '"sanity_slice": (\n'
+            "            args.evidence_class == "
+            "HPCA27_SANITY_EVIDENCE_CLASS",
+            source,
+        )
+        self.assertIn(
+            '"final_performance_candidate": (\n'
+            "            args.evidence_class == "
+            "HPCA27_FINAL_EVIDENCE_CLASS",
+            source,
+        )
+
     def test_parity_profile_leaves_process_cwd_unset(self):
         for relative in (
             "configs/example/spec06_config.py",

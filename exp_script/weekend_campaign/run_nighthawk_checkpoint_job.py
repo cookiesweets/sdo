@@ -413,6 +413,12 @@ def main(argv=None):
         "config_files": config_identity,
         "config_hash": stable_sha256(config_identity),
         "evidence_class": args.evidence_class,
+        "sanity_slice": (
+            args.evidence_class == HPCA27_SANITY_EVIDENCE_CLASS
+        ),
+        "final_performance_candidate": (
+            args.evidence_class == HPCA27_FINAL_EVIDENCE_CLASS
+        ),
         "manifest": manifest_path,
         "manifest_sha256": manifest_hash,
         "max_insts": args.max_insts,
