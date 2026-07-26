@@ -44,8 +44,28 @@ class JyRubyTraceAuditTest(unittest.TestCase):
             "SpecLDRequestTable with (addr=0x0, ld_idx=2, sn=9)\n",
         ])
         self.assertEqual(status, 0, stderr)
-        self.assertIn("unique_seqnums=1\n", stdout)
+        self.assertIn("unique_instruction_seqnums=1\n", stdout)
+        self.assertIn("unique_transactions=1\n", stdout)
+        self.assertIn("split_instruction_seqnums=0\n", stdout)
         self.assertIn("failed_insert_lines=1\n", stdout)
+        self.assertIn("final_status=PASS\n", stdout)
+
+    def test_split_load_fragments_are_distinct_transactions(self):
+        status, stdout, stderr = run_auditor([
+            "10 SPEC_LD_L1 commands callback readCallback_fromL0 "
+            "(sn=7, idx=1-0, addr=[0x3f, line 0x0])\n",
+            "11 SPEC_LD_L1 commands callback readCallback_fromL0 "
+            "(sn=7, idx=1-1, addr=[0x40, line 0x40])\n",
+            "12 SPEC_LD_L1 commands callback readCallback_fromL1 "
+            "(sn=7, idx=1-0, addr=[0x3f, line 0x0])\n",
+            "13 SPEC_LD_L1 commands callback readCallback_fromL1 "
+            "(sn=7, idx=1-1, addr=[0x40, line 0x40])\n",
+        ])
+        self.assertEqual(status, 0, stderr)
+        self.assertIn("unique_instruction_seqnums=1\n", stdout)
+        self.assertIn("unique_transactions=2\n", stdout)
+        self.assertIn("split_instruction_seqnums=1\n", stdout)
+        self.assertIn("transactions_not_exactly_one_each=0\n", stdout)
         self.assertIn("final_status=PASS\n", stdout)
 
     def test_duplicate_final_callback_fails(self):
@@ -58,8 +78,8 @@ class JyRubyTraceAuditTest(unittest.TestCase):
             "(sn=8, idx=1-0, addr=[0x4, line 0x0])\n",
         ])
         self.assertEqual(status, 1)
-        self.assertIn("seqnums_with_duplicate_l1=1\n", stdout)
-        self.assertIn("seqnums_not_exactly_one_each=1\n", stdout)
+        self.assertIn("transactions_with_duplicate_l1=1\n", stdout)
+        self.assertIn("transactions_not_exactly_one_each=1\n", stdout)
         self.assertIn("final_status=FAIL\n", stdout)
 
     def test_missing_second_stage_callback_fails(self):
@@ -68,7 +88,7 @@ class JyRubyTraceAuditTest(unittest.TestCase):
             "(sn=9, idx=1-0, addr=[0x4, line 0x0])\n",
         ])
         self.assertEqual(status, 1)
-        self.assertIn("seqnums_missing_l1=1\n", stdout)
+        self.assertIn("transactions_missing_l1=1\n", stdout)
         self.assertIn("final_status=FAIL\n", stdout)
 
     def test_stuck_packet_fails_even_with_balanced_callbacks(self):
@@ -86,7 +106,7 @@ class JyRubyTraceAuditTest(unittest.TestCase):
     def test_empty_trace_fails_closed(self):
         status, stdout, unused_stderr = run_auditor([])
         self.assertEqual(status, 1)
-        self.assertIn("unique_seqnums=0\n", stdout)
+        self.assertIn("unique_transactions=0\n", stdout)
         self.assertIn("final_status=FAIL\n", stdout)
 
 
