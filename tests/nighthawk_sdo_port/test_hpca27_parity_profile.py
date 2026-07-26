@@ -24,7 +24,9 @@ from common.SDOConfig import configure_hpca27_parity_branch_predictor
 from common.SDOConfig import HPCA27_BRANCH_PREDICTOR_PARITY
 from common.SDOConfig import HPCA27_CPU_PARITY
 from common.SDOConfig import HPCA27_INDIRECT_PREDICTOR_PARITY
+from common.SDOConfig import HPCA27_FULL_EVIDENCE_CLASS
 from common.SDOConfig import HPCA27_OPTION_PARITY
+from common.SDOConfig import HPCA27_SANITY_EVIDENCE_CLASS
 from common.SDOConfig import validate_hpca27_parity_options
 
 
@@ -61,6 +63,7 @@ def parity_options():
     for name, value in HPCA27_OPTION_PARITY.items():
         setattr(options, name, value)
     options.hpca27_performance_parity = True
+    options.hpca27_evidence_class = HPCA27_FULL_EVIDENCE_CLASS
     return options
 
 
@@ -73,7 +76,9 @@ def parity_cpu():
     return cpu
 
 
-def runner_argv(max_insts="500000000"):
+def runner_argv(
+        max_insts="500000000",
+        evidence_class=HPCA27_FULL_EVIDENCE_CLASS):
     return [
         "--source-root", "/source",
         "--binary", "/binary",
@@ -100,14 +105,17 @@ def runner_argv(max_insts="500000000"):
         "--llc-tag-issue-interval", "0",
         "--output-dir", "/output",
         "--max-insts", max_insts,
+        "--evidence-class", evidence_class,
         "--expected-source-sha", "0" * 40,
         "--expected-binary-sha256", "0" * 64,
         "--expected-manifest-sha256", "1" * 64,
     ]
 
 
-def runner_args(max_insts="500000000"):
-    return RUNNER.parse_args(runner_argv(max_insts))
+def runner_args(
+        max_insts="500000000",
+        evidence_class=HPCA27_FULL_EVIDENCE_CLASS):
+    return RUNNER.parse_args(runner_argv(max_insts, evidence_class))
 
 
 class CpuParityProfileTest(unittest.TestCase):
@@ -155,6 +163,26 @@ class CpuParityProfileTest(unittest.TestCase):
             setattr(options, name, value)
             with self.assertRaises(ValueError):
                 validate_hpca27_parity_options(options)
+
+    def test_profile_accepts_only_explicit_sanity_budgets(self):
+        for maxinsts in (10000000, 25000000):
+            options = parity_options()
+            options.hpca27_evidence_class = HPCA27_SANITY_EVIDENCE_CLASS
+            options.maxinsts = maxinsts
+            validate_hpca27_parity_options(options)
+
+        for maxinsts in (9000000, 500000000):
+            options = parity_options()
+            options.hpca27_evidence_class = HPCA27_SANITY_EVIDENCE_CLASS
+            options.maxinsts = maxinsts
+            with self.assertRaises(ValueError):
+                validate_hpca27_parity_options(options)
+
+    def test_profile_rejects_short_roi_without_sanity_class(self):
+        options = parity_options()
+        options.maxinsts = 10000000
+        with self.assertRaises(ValueError):
+            validate_hpca27_parity_options(options)
 
     def test_profile_rejects_non_sdo_mechanism(self):
         options = parity_options()
@@ -282,6 +310,7 @@ class CanonicalRunnerContractTest(unittest.TestCase):
             "--scheme=SDO",
             "--mem_model=RC",
             "--maxinsts=500000000",
+            "--hpca27-evidence-class=full-performance",
             "--threat_model=Futuristic",
             "--STT=1",
             "--impChannel=1",
@@ -385,6 +414,47 @@ class CanonicalRunnerContractTest(unittest.TestCase):
     def test_runner_rejects_non_500m_roi(self):
         args = runner_args(max_insts="100000000")
         row = {"post_restore_instruction_budget": 500000000}
+        with self.assertRaises(ValueError):
+            RUNNER.validate_fixed_controls(args, row)
+
+    def test_runner_accepts_only_explicit_sanity_budgets(self):
+        for budget in (10000000, 25000000):
+            args = runner_args(
+                max_insts=str(budget),
+                evidence_class=HPCA27_SANITY_EVIDENCE_CLASS,
+            )
+            row = {
+                "display_name": "bzip2",
+                "checkpoint_directory": "/checkpoint",
+                "checkpoint_restore": 10000000000,
+                "post_restore_instruction_budget": budget,
+            }
+            RUNNER.validate_fixed_controls(args, row)
+            command = RUNNER.build_command(
+                args, "/binary", "/source/config.py", "/output", row
+            )
+            self.assertIn(
+                "--hpca27-evidence-class="
+                + HPCA27_SANITY_EVIDENCE_CLASS,
+                command,
+            )
+            self.assertIn("--maxinsts=" + str(budget), command)
+
+        for budget in (9000000, 500000000):
+            args = runner_args(
+                max_insts=str(budget),
+                evidence_class=HPCA27_SANITY_EVIDENCE_CLASS,
+            )
+            row = {"post_restore_instruction_budget": budget}
+            with self.assertRaises(ValueError):
+                RUNNER.validate_fixed_controls(args, row)
+
+    def test_runner_rejects_budget_manifest_mismatch(self):
+        args = runner_args(
+            max_insts="10000000",
+            evidence_class=HPCA27_SANITY_EVIDENCE_CLASS,
+        )
+        row = {"post_restore_instruction_budget": 25000000}
         with self.assertRaises(ValueError):
             RUNNER.validate_fixed_controls(args, row)
 

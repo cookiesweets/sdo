@@ -24,6 +24,9 @@ MODE_OPTIONS = {
 }
 
 HPCA27_MAX_INSTS = 500000000
+HPCA27_FULL_EVIDENCE_CLASS = "full-performance"
+HPCA27_SANITY_EVIDENCE_CLASS = "sanity-slice-not-final-performance"
+HPCA27_SANITY_MAX_INSTS = (10000000, 25000000)
 
 
 def utc_now():
@@ -154,6 +157,14 @@ def parse_args(argv=None):
     )
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--max-insts", type=int, required=True)
+    parser.add_argument(
+        "--evidence-class",
+        choices=(
+            HPCA27_FULL_EVIDENCE_CLASS,
+            HPCA27_SANITY_EVIDENCE_CLASS,
+        ),
+        required=True,
+    )
     parser.add_argument("--expected-source-sha", required=True)
     parser.add_argument("--expected-binary-sha256", required=True)
     parser.add_argument("--expected-manifest-sha256", required=True)
@@ -180,7 +191,6 @@ def validate_fixed_controls(args, row):
         "llc_tag_banks": 1,
         "llc_tag_issue_interval": 0,
         "llc_tag_latency": 1,
-        "max_insts": HPCA27_MAX_INSTS,
         "mode": "sdo-implicit",
         "pending_policy": "not_applicable",
         "smshr": 0,
@@ -193,11 +203,24 @@ def validate_fixed_controls(args, row):
             mismatches.append(
                 "{}={!r} (expected {!r})".format(name, actual, wanted)
             )
-    row_budget = int(row["post_restore_instruction_budget"])
-    if row_budget != HPCA27_MAX_INSTS:
+    if args.evidence_class == HPCA27_FULL_EVIDENCE_CLASS:
+        allowed_budgets = (HPCA27_MAX_INSTS,)
+    elif args.evidence_class == HPCA27_SANITY_EVIDENCE_CLASS:
+        allowed_budgets = HPCA27_SANITY_MAX_INSTS
+    else:
+        allowed_budgets = ()
+    if args.max_insts not in allowed_budgets:
         mismatches.append(
-            "post_restore_instruction_budget={!r} (expected {!r})".format(
-                row_budget, HPCA27_MAX_INSTS
+            "max_insts={!r} (expected one of {!r} for {!r})".format(
+                args.max_insts, allowed_budgets, args.evidence_class
+            )
+        )
+    row_budget = int(row["post_restore_instruction_budget"])
+    if row_budget != args.max_insts:
+        mismatches.append(
+            "post_restore_instruction_budget={!r} "
+            "(expected selected max_insts {!r})".format(
+                row_budget, args.max_insts
             )
         )
     if mismatches:
@@ -269,6 +292,7 @@ def build_command(args, binary, config, output_dir, row):
         "--ruby-clock=2GHz",
         "--ports=4",
         "--maxinsts=" + str(args.max_insts),
+        "--hpca27-evidence-class=" + args.evidence_class,
         "--network=simple",
         "--topology=Mesh_XY",
         "--mesh-rows=1",
@@ -382,6 +406,7 @@ def main(argv=None):
         "command_sha256": stable_sha256(command),
         "config_files": config_identity,
         "config_hash": stable_sha256(config_identity),
+        "evidence_class": args.evidence_class,
         "manifest": manifest_path,
         "manifest_sha256": manifest_hash,
         "max_insts": args.max_insts,

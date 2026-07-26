@@ -100,6 +100,10 @@ HPCA27_OPTION_PARITY = {
     "maxinsts": 500000000,
 }
 
+HPCA27_FULL_EVIDENCE_CLASS = "full-performance"
+HPCA27_SANITY_EVIDENCE_CLASS = "sanity-slice-not-final-performance"
+HPCA27_SANITY_MAX_INSTS = (10000000, 25000000)
+
 
 def is_sdo_enabled(options):
     """Return true only for the exact, explicitly selected SDO scheme."""
@@ -121,11 +125,42 @@ def validate_hpca27_parity_options(options):
 
     mismatches = []
     for name, expected in HPCA27_OPTION_PARITY.items():
+        if name == "maxinsts":
+            continue
         actual = getattr(options, name, None)
         if actual != expected:
             mismatches.append(
                 "{}={!r} (expected {!r})".format(name, actual, expected)
             )
+
+    evidence_class = getattr(
+        options, "hpca27_evidence_class", HPCA27_FULL_EVIDENCE_CLASS
+    )
+    maxinsts = getattr(options, "maxinsts", None)
+    if evidence_class == HPCA27_FULL_EVIDENCE_CLASS:
+        if maxinsts != HPCA27_OPTION_PARITY["maxinsts"]:
+            mismatches.append(
+                "maxinsts={!r} (expected {!r} for {!r})".format(
+                    maxinsts,
+                    HPCA27_OPTION_PARITY["maxinsts"],
+                    evidence_class,
+                )
+            )
+    elif evidence_class == HPCA27_SANITY_EVIDENCE_CLASS:
+        if maxinsts not in HPCA27_SANITY_MAX_INSTS:
+            mismatches.append(
+                "maxinsts={!r} (expected one of {!r} for {!r})".format(
+                    maxinsts, HPCA27_SANITY_MAX_INSTS, evidence_class
+                )
+            )
+    else:
+        mismatches.append(
+            "hpca27_evidence_class={!r} (expected {!r} or {!r})".format(
+                evidence_class,
+                HPCA27_FULL_EVIDENCE_CLASS,
+                HPCA27_SANITY_EVIDENCE_CLASS,
+            )
+        )
     if mismatches:
         raise ValueError(
             "HPCA27 sparespec-stt parity profile mismatch: "
