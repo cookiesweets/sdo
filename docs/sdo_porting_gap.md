@@ -2,6 +2,17 @@
 
 ## Scope and conclusion
 
+> Final evidence update (2026-07-26): the evaluated Two-Level candidate is
+> commit `426ed88a85300e75926b661594ec716d4a916342`, built as
+> `X86_MESI_Two_Level` with binary SHA-256
+> `6df37ee8d537a16e861bfa38974ddc19d8228d8e8bfc1b149b07dd00ff7e006e`.
+> It remains an **SDO-style partial port / HOLD**, not an exact SDO
+> reproduction and not a performance candidate. See
+> [`../SDO_PORTING_AUDIT.md`](../SDO_PORTING_AUDIT.md) for the artifact-bound
+> disposition. Historical source references below are retained because they
+> identify the original protocol mapping; the final evidence section records
+> what was actually built and exercised.
+
 This document is a source audit, not a claim that either simulator currently
 builds or passes a workload. It compares:
 
@@ -611,22 +622,76 @@ binary, emitted `config.ini`/`config.json`, checkpoint run, architectural
 result, or artifact-bound parity verdict. Their status is therefore
 **source-bound / runtime-unvalidated**, not exact parity.
 
+## 11. Final candidate evidence and disposition
+
+The final candidate integrates the non-mechanism parity fixes and the
+split-transaction callback auditor:
+
+- source: `426ed88a85300e75926b661594ec716d4a916342`;
+- parents: `98ee72283f9237a015a131f3d7fb84d2c45e1f7d` and
+  `c09e3a1616ebb5f08f092fd760ccd64eefca80c3`;
+- binary SHA-256:
+  `6df37ee8d537a16e861bfa38974ddc19d8228d8e8bfc1b149b07dd00ff7e006e`;
+- branch-predictor adapter policy:
+  `91370ace2a4383e98aa5d420ae986b08413dcf1d`, policy SHA-256
+  `8b33f10649cd769b3f2d229f7627a7b7b6c2ee406c0f8d158d13644f0eb36a40`.
+
+The isolated source/build gate passed 52/52 tests. A 20K-instruction
+Two-Level SDO hello run returned simulator exit 0 and emitted `stats.txt`.
+The same run observed 1,345 unique split-aware speculative transactions:
+1,345 L0 callbacks and 1,345 L1 callbacks, with zero duplicate, missing,
+non-exact, or stuck transactions. MLDOM was enabled at all four response
+owners audited: CPU, RubySystem, L1 controller, and Directory controller.
+This is compile/hello/callback evidence only.
+
+The exhaustive generated-config comparison contains 22 raw leaves. The
+fail-closed adapter folds exactly the 20 reviewed branch-predictor
+representation leaves. Two differences remain:
+
+1. `system.ruby.l2_cntrl0.spec_data_to_l1_latency=2`, an SDO mechanism field
+   that has not received a performance allowlist approval;
+2. the explicit 10M sanity budget versus the 500M reference budget.
+
+The full prelaunch gate still fails closed. Besides the unapproved mechanism
+allowlist, the captured cactuBSSN artifact used SPEC2017 identity while the
+available canonical reference manifest was SPEC2006, and the checkpoint paths
+did not identify the same byte-level artifact. No checkpoint slice was
+launched from this failed prelaunch.
+
+The branch adapter establishes configuration representation equivalence only.
+It does not establish runtime branch-predictor equivalence: the reference
+inline predictor consumes TournamentBP history, while
+`SimpleIndirectPredictor` owns and repairs a separate speculative 13-bit
+history. The topology fold, removed private L0 hop, absence of a distinct old
+physical-L2 target, stale LQ-index/late-response risk, and unexecuted
+validation/re-execution directed matrix are also unresolved required semantic
+items.
+
+Therefore:
+
+- classification: **SDO-style partial port**;
+- candidate gate: **HOLD**;
+- short checkpoint slices: **NOT LAUNCHED**;
+- full sweep: **NOT AUTHORIZED**;
+- paper-safe use: implementation/provenance and callback-sanity evidence only,
+  never an apples-to-apples performance bar.
+
 ## Status
 
-This audit establishes the source-level gap and a validation plan. It does not
-establish:
+This audit establishes the source-level gap, the final compile/hello/callback
+evidence, and a validation plan. It does not establish:
 
-- that `40b4039` builds;
-- that current Two-Level SDO is functionally correct;
+- full directed functional correctness of current Two-Level SDO;
 - that it is semantically equivalent to upstream Three-Level SDO;
 - that checkpoints restore across both binaries;
 - any performance, security, area, power, or timing result.
 
 Until those gates pass, label the implementation
-**“candidate Two-Level SDO port”**, not **“exact SDO reproduction.”**
+**“SDO-style partial port”**, not **“exact SDO reproduction.”**
 
 The repository now includes the fail-closed compile-only driver
 `tests/nighthawk_sdo_port/compile_x86_mesi_two_level.sh`. It preserves a unique
-manifest and binary hash when run, but the Stage-B compile gate remains
-**NOT RUN**: no binary, boot, workload, or checkpoint result is claimed by this
-source-only addition.
+manifest and binary hash when run. The Stage-B compile and hello gates now
+pass for the final identity above. Checkpoint parity, the complete directed
+semantic matrix, two short checkpoint slices, and any performance sweep remain
+blocked by the HOLD conditions in Section 11.
