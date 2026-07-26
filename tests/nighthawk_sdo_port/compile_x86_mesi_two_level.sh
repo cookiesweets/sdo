@@ -5,8 +5,8 @@
 
 set -euo pipefail
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-SOURCE_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd -P)
+SOURCE_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd -P)
 
 usage() {
     cat <<'EOF'
@@ -15,7 +15,7 @@ Usage:
     --run-dir NEW_ABSOLUTE_DIR [OPTIONS]
 
 Required:
-  --build-root DIR   New, absolute SCons build root.
+  --build-root DIR   New, canonical SCons root whose basename is "build".
   --run-dir DIR      New, absolute directory for the compile manifest/log.
 
 Options:
@@ -28,7 +28,8 @@ The only build target is:
   BUILD_ROOT/X86_MESI_Two_Level/gem5.opt
 
 Run this script through the baseline-host resource guard. It never launches a
-workload, accepts no checkpoint argument, and refuses existing build/run paths.
+workload, accepts no checkpoint argument, and refuses existing, aliased,
+overlapping, or source-tree build/run paths.
 EOF
 }
 
@@ -51,6 +52,69 @@ is_uint() {
         ''|*[!0-9]*) return 1 ;;
         *) return 0 ;;
     esac
+}
+
+normalize_absolute_path() {
+    local input=$1
+    local component
+    local normalized=
+    local index=0
+    local -a input_components
+    local -a output_components
+
+    IFS=/ read -r -a input_components <<<"$input"
+    for component in "${input_components[@]}"; do
+        case $component in
+            ''|.)
+                ;;
+            ..)
+                if (( index > 0 )); then
+                    index=$((index - 1))
+                    unset 'output_components[index]'
+                fi
+                ;;
+            *)
+                output_components[index]=$component
+                index=$((index + 1))
+                ;;
+        esac
+    done
+
+    for ((index = 0; index < ${#output_components[@]}; index++)); do
+        normalized=$normalized/${output_components[index]}
+    done
+    printf '%s\n' "${normalized:-/}"
+}
+
+# Resolve every existing ancestor with pwd -P, while retaining a normalized
+# suffix that does not exist yet. This provides realpath -m semantics without
+# depending on GNU-only realpath options.
+canonicalize_missing_path() {
+    local requested=$1
+    local normalized
+    local probe
+    local suffix=
+    local component
+    local resolved
+
+    normalized=$(normalize_absolute_path "$requested") || return 1
+    probe=$normalized
+    while [[ ! -e "$probe" ]]; do
+        # A dangling symlink is not a new path and must not be followed.
+        [[ ! -L "$probe" ]] || return 1
+        [[ "$probe" != / ]] || return 1
+        component=${probe##*/}
+        suffix=/$component$suffix
+        probe=${probe%/*}
+        [[ -n "$probe" ]] || probe=/
+    done
+    [[ -d "$probe" ]] || return 1
+    resolved=$(cd "$probe" && pwd -P) || return 1
+    if [[ "$resolved" == / ]]; then
+        printf '/%s\n' "${suffix#/}"
+    else
+        printf '%s%s\n' "$resolved" "$suffix"
+    fi
 }
 
 shell_join() {
@@ -109,10 +173,23 @@ done
 [[ -n "$RUN_DIR" ]] || die "--run-dir is required"
 [[ "$BUILD_ROOT" == /* ]] || die "--build-root must be absolute"
 [[ "$RUN_DIR" == /* ]] || die "--run-dir must be absolute"
+case $BUILD_ROOT$RUN_DIR in
+    *$'\n'*|*$'\r'*) die "build/run paths cannot contain newlines" ;;
+esac
+BUILD_ROOT=$(canonicalize_missing_path "$BUILD_ROOT") ||
+    die "cannot canonicalize --build-root safely"
+RUN_DIR=$(canonicalize_missing_path "$RUN_DIR") ||
+    die "cannot canonicalize --run-dir safely"
 [[ ! -e "$BUILD_ROOT" ]] || die "build root already exists: $BUILD_ROOT"
 [[ ! -e "$RUN_DIR" ]] || die "run directory already exists: $RUN_DIR"
-[[ "$BUILD_ROOT" != "$SOURCE_ROOT" ]] || die "build root cannot be source root"
-[[ "$RUN_DIR" != "$SOURCE_ROOT" ]] || die "run directory cannot be source root"
+[[ "${BUILD_ROOT##*/}" == build ]] ||
+    die "--build-root must end in /build for this SConstruct"
+case "$BUILD_ROOT/" in
+    "$SOURCE_ROOT/"*) die "build root cannot be in source tree" ;;
+esac
+case "$RUN_DIR/" in
+    "$SOURCE_ROOT/"*) die "run directory cannot be in source tree" ;;
+esac
 [[ "$BUILD_ROOT" != "$RUN_DIR" ]] || die "build root and run directory must differ"
 case "$RUN_DIR/" in
     "$BUILD_ROOT/"*) die "run directory cannot be inside build root" ;;
@@ -164,6 +241,7 @@ if [[ -r /proc/meminfo ]]; then
 fi
 
 mkdir -p "$(dirname "$BUILD_ROOT")" "$(dirname "$RUN_DIR")"
+mkdir "$BUILD_ROOT"
 mkdir "$RUN_DIR"
 
 git -C "$SOURCE_ROOT" status --porcelain=v1 >"$RUN_DIR/git_status.txt"
