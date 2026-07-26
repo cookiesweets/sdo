@@ -152,8 +152,6 @@ class Prefetcher : public SimObject
         uint32_t m_train_misses;
         //! number of initial prefetches to startup a stream
         uint32_t m_num_startup_pfs;
-        //! number of extra prefetches ahead of current address
-        uint32_t m_num_extra_pfs;
         //! number of stride filters
         uint32_t m_num_unit_filters;
         //! number of non-stride filters

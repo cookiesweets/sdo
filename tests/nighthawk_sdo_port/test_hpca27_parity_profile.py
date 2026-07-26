@@ -234,6 +234,23 @@ class RubyParityProfileTest(unittest.TestCase):
             self.assertIn(contract, source)
         self.assertNotIn("num_extra_pfs = Param.UInt32(", source)
 
+        implementation = read_source(
+            "src/mem/ruby/structures/Prefetcher.cc"
+        )
+        header = read_source(
+            "src/mem/ruby/structures/Prefetcher.hh"
+        )
+        self.assertNotIn("p->num_extra_pfs", implementation)
+        self.assertNotIn("m_num_extra_pfs", implementation)
+        self.assertNotIn("m_num_extra_pfs", header)
+        for allocation in (
+            "delete[] m_unit_filter_hit;",
+            "delete[] m_negative_filter_hit;",
+            "delete[] m_nonunit_stride;",
+            "delete[] m_nonunit_hit;",
+        ):
+            self.assertIn(allocation, implementation)
+
     def test_reference_spare_field_representation_is_retained(self):
         source = " ".join(
             read_source("src/mem/ruby/structures/RubyCache.py").split()

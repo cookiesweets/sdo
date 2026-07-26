@@ -42,7 +42,6 @@ Prefetcher::Prefetcher(const Params *p)
     : SimObject(p), m_num_streams(p->num_streams),
     m_array(p->num_streams), m_train_misses(p->train_misses),
     m_num_startup_pfs(p->num_startup_pfs),
-    m_num_extra_pfs(p->num_extra_pfs),
     m_num_unit_filters(p->unit_filter),
     m_num_nonunit_filters(p->nonunit_filter),
     m_unit_filter(p->unit_filter, 0),
@@ -80,10 +79,10 @@ Prefetcher::Prefetcher(const Params *p)
 
 Prefetcher::~Prefetcher()
 {
-    delete m_unit_filter_hit;
-    delete m_negative_filter_hit;
-    delete m_nonunit_stride;
-    delete m_nonunit_hit;
+    delete[] m_unit_filter_hit;
+    delete[] m_negative_filter_hit;
+    delete[] m_nonunit_stride;
+    delete[] m_nonunit_hit;
 }
 
 void
@@ -174,7 +173,6 @@ Prefetcher::observeMiss(Addr address, const RubyRequestType& type)
                                 m_unit_filter_index, line_addr, 1, alloc);
     if (alloc) {
         // allocate a new prefetch stream
-        DPRINTF(RubyPrefetcher, "initialize a new unit stride prefetch stream\n");
         initializeStream(line_addr, 1, getLRUindex(), type);
     }
     if (hit) {
@@ -186,7 +184,6 @@ Prefetcher::observeMiss(Addr address, const RubyRequestType& type)
         m_negative_filter_index, line_addr, -1, alloc);
     if (alloc) {
         // allocate a new prefetch stream
-        DPRINTF(RubyPrefetcher, "initiralize a new negative unit stride prefetch stream\n");
         initializeStream(line_addr, -1, getLRUindex(), type);
     }
     if (hit) {
@@ -199,7 +196,6 @@ Prefetcher::observeMiss(Addr address, const RubyRequestType& type)
     hit = accessNonunitFilter(address, &stride, alloc);
     if (alloc) {
         assert(stride != 0);  // ensure non-zero stride prefetches
-        DPRINTF(RubyPrefetcher, "initialize a new non-unit stride stream, stride = %d\n", stride);
         initializeStream(line_addr, stride, getLRUindex(), type);
     }
     if (hit) {
@@ -258,14 +254,8 @@ Prefetcher::issueNextPrefetch(Addr address, PrefetchEntry *stream)
     // launch next prefetch
     stream->m_address = line_addr;
     stream->m_use_time = m_controller->curCycle();
-    numPrefetchRequested++;
     DPRINTF(RubyPrefetcher, "Requesting prefetch for %#x\n", line_addr);
     m_controller->enqueuePrefetch(line_addr, stream->m_type);
-
-    //Addr prefetched_line_addr = makeNextStrideAddress(line_addr, stream->m_stride * m_num_extra_pfs);
-    //numPrefetchRequested++;
-    //DPRINTF(RubyPrefetcher, "Requesting prefetch for %#x\n", prefetched_line_addr);
-    //m_controller->enqueuePrefetch(prefetched_line_addr, stream->m_type);
 }
 
 uint32_t
@@ -315,7 +305,6 @@ Prefetcher::initializeStream(Addr address, int stride,
 
     // insert a number of prefetches into the prefetch table
     for (int k = 0; k < m_num_startup_pfs; k++) {
-        DPRINTF(RubyPrefetcher, "current line_addr: %#x, stride = %d\n", line_addr, stride);
         line_addr = makeNextStrideAddress(line_addr, stride);
         // possibly stop prefetching at page boundaries
         if (page_addr != pageAddress(line_addr)) {
@@ -335,15 +324,6 @@ Prefetcher::initializeStream(Addr address, int stride,
 
     // update the address to be the last address prefetched
     mystream->m_address = line_addr;
-
-    //// do a number of extra prefetches
-    //for (int k = 0; k < m_num_extra_pfs; k++) {
-        //line_addr = makeNextStrideAddress(line_addr, stride);
-        //// launch prefetch
-        //numPrefetchRequested++;
-        //DPRINTF(RubyPrefetcher, "Requesting prefetch for %#x\n", line_addr);
-        //m_controller->enqueuePrefetch(line_addr, m_array[index].m_type);
-    //}
 }
 
 PrefetchEntry *
@@ -426,7 +406,7 @@ Prefetcher::accessNonunitFilter(Addr address, int *stride,
                         // dataBlockBytes (bc makeNextStrideAddress is
                         // calculated based on this multiplicative constant!)
                         *stride = m_nonunit_stride[i] /
-                                    (int) RubySystem::getBlockSizeBytes();
+                                    RubySystem::getBlockSizeBytes();
 
                         // clear this filter entry
                         clearNonunitEntry(i);
