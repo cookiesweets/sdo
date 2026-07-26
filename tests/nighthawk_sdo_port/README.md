@@ -58,6 +58,23 @@ The test uses only the Python standard library and is compatible with Python
 3.5. It intentionally uses no f-strings, variable annotations, or third-party
 packages.
 
+## Directed JY_Ruby trace audit
+
+For an SDO shared-cache directed run made with `--debug-flags=JY_Ruby`, audit
+the runtime's two-stage speculative-load callbacks with:
+
+```sh
+python3 tests/nighthawk_sdo_port/audit_jy_ruby_trace.py \
+  /path/to/run/docker.stdout.log
+```
+
+The audit fails closed on an empty trace, a missing or duplicate L0/L1 callback
+for any observed sequence number, or a `Stuck packet` line. Retried
+`SpecLDRequestTable` insertions are counted but are not by themselves a
+failure: the exactly-once callback pairing verifies whether each ultimately
+tracked request completed. This is a directed runtime accounting check, not a
+proof that every possible squash, alias, or coherence ordering is correct.
+
 ## Contract covered
 
 The regression reads, but never modifies:
