@@ -1,5 +1,39 @@
 # SDO-to-Nighthawk Two-Level porting-gap audit
 
+## 2026-07-26 candidate disposition
+
+The source audit below remains the protocol-mapping basis, but the executable
+candidate has advanced since its original `40b4039` snapshot.  The frozen
+candidate reviewed for HPCA 2027 is:
+
+- source branch `hpca27/sdo-candidate-v2-integrated`, clean commit
+  `426ed88a85300e75926b661594ec716d4a916342`;
+- binary SHA-256
+  `6df37ee8d537a16e861bfa38974ddc19d8228d8e8bfc1b149b07dd00ff7e006e`;
+- protected performance-reference artifact at Nighthawk commit
+  `4dac93b1738bbf11408c61ccd2992d162c2c5804`, binary SHA-256
+  `dc0dd1f0632c978b178412f56903a88da24e3116c3f5f1a9dc4bc072146d52c5`;
+- later mechanism-source audit point `8ff168d301f6e65514d2251752d2d84a7791d298`.
+
+The last item is used only to understand the final mechanism.  It is not
+substituted for the immutable `4dac93b` performance reference.
+
+The frozen candidate passes 52 source tests and a clean build.  Its hello
+audit observes 1,345 unique split-aware transactions at both the L0 and L1
+callback owners, with zero duplicate, missing, or stuck callbacks.  This is
+callback/accounting evidence, not checkpoint-performance certification.
+The exact result directories and hashes are summarized in the repository-root
+`SDO_PORTING_AUDIT.md`.
+
+The mapping table contains 40 reviewed items, of which 17 explicitly have no
+direct Two-Level equivalent.  None of the required end-to-end SDO mechanisms
+has yet been certified as an exact Three-Level reproduction on the Two-Level
+topology.  In particular, the folded level semantics, predictor runtime
+update/recovery behavior, response-identity risk, and one SDO-specific
+latency field remain unresolved.  Therefore the only paper-safe name is
+**SDO-style partial port**, its performance disposition is **HOLD**, and no
+checkpoint slice or full sweep was launched.
+
 ## Scope and conclusion
 
 This document is a source audit, not a claim that either simulator currently
