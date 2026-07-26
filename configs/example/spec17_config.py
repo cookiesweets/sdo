@@ -319,10 +319,11 @@ else:
     sys.exit(1)
 
 spec_run_dir = os.environ.get('SPEC17_RUN_DIR')
-if spec_run_dir:
-    process.cwd = spec_run_dir
-else:
-    process.cwd = os.getcwd()
+if not options.hpca27_performance_parity:
+    if spec_run_dir:
+        process.cwd = spec_run_dir
+    else:
+        process.cwd = os.getcwd()
 
 # Set process stdout/stderr
 if options.benchmark_stdout:

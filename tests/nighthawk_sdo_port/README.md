@@ -100,6 +100,22 @@ Run the source and synthetic-config regressions with:
 python3 tests/nighthawk_sdo_port/test_mldom_config.py
 ```
 
+## HPCA27 non-mechanism parity profile
+
+The checkpoint performance path has an opt-in, fail-closed profile rather than
+changing the historical SDO defaults globally. Its regression verifies the
+reviewed O3 port/width/queue/register values, RC memory model, 500M ROI, Ruby
+cache resource-stall setting, one-cycle sequencer latency, and the canonical
+outer-runner command:
+
+```sh
+python3 tests/nighthawk_sdo_port/test_hpca27_parity_profile.py
+```
+
+This test builds no simulator and runs no workload. After it passes, a fresh
+Two-Level build and real checkpoint candidate are still required; only the
+artifact-bound v2 parity checker can admit a performance run.
+
 ## Contract covered
 
 The regression reads, but never modifies:

@@ -50,6 +50,7 @@ from m5.util import addToPath, fatal
 from common import ObjectList
 from common import MemConfig
 from common.SDOConfig import is_sdo_enabled
+from common.SDOConfig import validate_hpca27_parity_options
 
 from topologies import *
 from network import Network
@@ -143,6 +144,7 @@ def create_topology(controllers, options):
 
 def create_system(options, full_system, system, piobus = None, dma_ports = []):
 
+    validate_hpca27_parity_options(options)
     system.ruby = RubySystem()
     ruby = system.ruby
     ruby.enable_MLDOM = is_sdo_enabled(options)

@@ -375,6 +375,10 @@ def addCommonOptions(parser):
     parser.add_option("--scheme", default=None, action="store", type="choice",
             choices=["UnsafeBaseline", "DelayExecute", "SDO"],
             help="choose baseline or defense designs to evaluate")
+    parser.add_option("--hpca27-performance-parity", default=False,
+            action="store_true",
+            help="fail closed unless non-mechanism controls match the "
+                 "reviewed HPCA27 sparespec-stt performance profile")
     parser.add_option("--mem_model", default=None, action="store", type="choice",
             choices=["TSO", "RC"],
             help="Select TSO or RC.")
@@ -459,6 +463,9 @@ def addCommonOptions(parser):
 
     parser.add_option("--ruby_enable_resource_stall", default=1, action="store", type="int",
             help="enable tag/data array access latency")
+    parser.add_option("--ruby-sequencer-hit-latency", default=2,
+            action="store", type="int",
+            help="RubySequencer I/D-cache hit latency in Ruby cycles")
 
 
 def addSEOptions(parser):

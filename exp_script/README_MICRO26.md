@@ -77,3 +77,32 @@ The SPEC benchmark modules also honor:
 - `SPEC06_X86_SUFFIX` / `SPEC17_X86_SUFFIX`: binary suffix override. The
   defaults match `sparespec-stt`: `_base.Xeon-gcc4.3` for SPEC2006 and
   `_r_base.sparespec-m64` for SPEC2017.
+
+## HPCA27 performance-parity runner
+
+The MICRO26 scripts above retain their historical/reference defaults and are
+not performance-parity evidence. In particular, they may select TSO, a 100M
+instruction budget, and Ruby resource stalls.
+
+Final checkpoint candidates must instead use the tracked canonical outer
+runner path:
+
+```text
+exp_script/weekend_campaign/run_nighthawk_checkpoint_job.py
+```
+
+Its outer CLI matches the Nighthawk campaign evidence contract and accepts
+only `sdo-implicit`, `Futuristic`, `current`, `not_applicable` pending policy,
+zero Nighthawk S-MSHRs, and the 500M post-restore ROI. The emitted gem5 command
+selects the explicit `--hpca27-performance-parity` profile. That profile fails
+closed unless the non-mechanism CPU/cache/Ruby/memory controls match the
+reviewed `sparespec-stt` reference, including RC (`needsTSO=false`), the O3
+width/queue/register/port values, disabled Ruby cache resource stalls, and
+one-cycle sequencer hit latency.
+
+The runner also binds the source commit, binary and manifest hashes, workload
+row, checkpoint selector, exact inner command, and thread environment. It
+writes `execution_identity.json` and `canonical_workload_row.json` before
+launch. A successful run is still only a candidate: the immutable artifact
+bundle must pass the separate `nighthawk-baseline` v2 parity gate, and the
+Two-Level SDO semantic gaps documented in `docs/sdo_porting_gap.md` remain.

@@ -65,6 +65,7 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
     #
     l2_bits = int(math.log(options.num_l2caches, 2))
     block_size_bits = int(math.log(options.cacheline_size, 2))
+    resource_stalls = bool(options.ruby_enable_resource_stall)
 
     for i in xrange(options.num_cpus):
         #
@@ -73,11 +74,13 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
         l1i_cache = L1Cache(size = options.l1i_size,
                             assoc = options.l1i_assoc,
                             start_index_bit = block_size_bits,
-                            is_icache = True)
+                            is_icache = True,
+                            resourceStalls = resource_stalls)
         l1d_cache = L1Cache(size = options.l1d_size,
                             assoc = options.l1d_assoc,
                             start_index_bit = block_size_bits,
-                            is_icache = False)
+                            is_icache = False,
+                            resourceStalls = resource_stalls)
 
         prefetcher = RubyPrefetcher.Prefetcher()
 
@@ -106,7 +109,11 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
 
         cpu_seq = RubySequencer(version = i, icache = l1i_cache,
                                 dcache = l1d_cache, clk_domain = clk_domain,
-                                ruby_system = ruby_system)
+                                ruby_system = ruby_system,
+                                icache_hit_latency =
+                                    options.ruby_sequencer_hit_latency,
+                                dcache_hit_latency =
+                                    options.ruby_sequencer_hit_latency)
 
 
         l1_cntrl.sequencer = cpu_seq
@@ -140,7 +147,8 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
         #
         l2_cache = L2Cache(size = options.l2_size,
                            assoc = options.l2_assoc,
-                           start_index_bit = l2_index_start)
+                           start_index_bit = l2_index_start,
+                           resourceStalls = resource_stalls)
 
         l2_cntrl = L2Cache_Controller(version = i,
                                       L2cache = l2_cache,

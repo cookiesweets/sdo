@@ -41,6 +41,7 @@ import inspect
 import sys
 from textwrap import TextWrapper
 
+from common.SDOConfig import configure_hpca27_parity_cpu
 from common.SDOConfig import is_sdo_enabled
 
 # Dictionary of mapping names of real CPU models to classes.
@@ -126,6 +127,7 @@ def config_scheme(cpu_cls, cpu_list, options):
             print "**********"
 
         sdo_enabled = is_sdo_enabled(options)
+        configure_hpca27_parity_cpu(cpu_list, options)
 
         for cpu in cpu_list:
             if len(options.scheme) != 0:
