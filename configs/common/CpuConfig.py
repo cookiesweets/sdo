@@ -41,6 +41,7 @@ import inspect
 import sys
 from textwrap import TextWrapper
 
+from common.SDOConfig import configure_hpca27_parity_branch_predictor
 from common.SDOConfig import configure_hpca27_parity_cpu
 from common.SDOConfig import is_sdo_enabled
 

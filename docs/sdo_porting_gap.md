@@ -563,6 +563,54 @@ parameters, STT visibility policy, taint scope, warmup, and instruction cap.
 Keep the original Three-Level SDO result separate. Do not launch a full sweep
 until the Two-Level semantic review and short-run accounting are clean.
 
+## 10. HPCA27 non-mechanism parity-profile update
+
+The source-only parity work based on SDO commit `2fa3ce45` closes several
+configuration-representation gaps against the reviewed Nighthawk artifact
+whose binary source commit is `4dac93b1738bbf11408c61ccd2992d162c2c5804`.
+It does not close the mechanism or runtime-validation gaps above.
+
+The following items are now bound in source:
+
+- `RubyCache` exposes data/tag issue intervals and per-cache `is_stt`.
+  A raw interval of zero resolves to the existing access latency, so the
+  reviewed `1`-cycle access/`0`-cycle raw-interval point retains the prior
+  bank-occupancy behavior. Both private L1 caches explicitly use one data
+  bank, one tag bank, one-cycle accesses, zero raw intervals, and STT
+  visibility; the shared L2 explicitly uses the six reviewed LLC selector
+  values and has STT visibility false
+  (`src/mem/ruby/structures/RubyCache.py`,
+  `src/mem/ruby/structures/BankedArray.cc`,
+  `configs/ruby/MESI_Two_Level.py`).
+- The base DRAM controller's static frontend and backend pipeline latencies
+  are each `10ns`, matching the reference source. This is a non-mechanism
+  timing correction and still requires emitted-config comparison
+  (`src/mem/DRAMCtrl.py`).
+- Every outer L1/L2 size and associativity selector and every LLC selector is
+  required. The runner rejects relative, lexically non-canonical, or
+  symlink-resolved source, binary, manifest, output, workload, checkpoint,
+  and config paths before launch. The six LLC timing selectors are passed to
+  the inner Ruby configuration
+  (`exp_script/weekend_campaign/run_nighthawk_checkpoint_job.py`).
+- The parity profile binds the target tree's `TournamentBP` and nested
+  `SimpleIndirectPredictor` values to the reviewed numeric and boolean
+  semantics, including the post-checkpoint switch CPU
+  (`configs/common/SDOConfig.py`, `configs/common/Simulation.py`).
+
+The branch predictor remains **partial** at the evidence layer. The reference
+schema stores `useIndirect` and indirect parameters directly on
+`TournamentBP`; this tree stores them in an `indirectBranchPred` child.
+[`hpca27_branch_predictor_evidence_adapter.md`](hpca27_branch_predictor_evidence_adapter.md)
+specifies the exact fail-closed structural checks and normalization that an
+external parity checker would need. That adapter is proposed, not implemented
+in the external checker, so an exhaustive config projection must continue to
+report the representation mismatch.
+
+These changes have Python-compatible source regressions but no fresh gem5
+binary, emitted `config.ini`/`config.json`, checkpoint run, architectural
+result, or artifact-bound parity verdict. Their status is therefore
+**source-bound / runtime-unvalidated**, not exact parity.
+
 ## Status
 
 This audit establishes the source-level gap and a validation plan. It does not

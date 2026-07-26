@@ -48,5 +48,10 @@ class RubyCache(SimObject):
     tagArrayBanks = Param.Int(1, "Number of banks for the tag array")
     dataAccessLatency = Param.Cycles(1, "cycles for a data array access")
     tagAccessLatency = Param.Cycles(1, "cycles for a tag array access")
+    dataIssueInterval = Param.Cycles(
+        0, "data array issue interval; 0 preserves access latency")
+    tagIssueInterval = Param.Cycles(
+        0, "tag array issue interval; 0 preserves access latency")
     resourceStalls = Param.Bool(True, "stall if there is a resource failure")
+    is_stt = Param.Bool(False, "STT visibility selected for this cache")
     ruby_system = Param.RubySystem(Parent.any, "")

@@ -98,11 +98,17 @@ selects the explicit `--hpca27-performance-parity` profile. That profile fails
 closed unless the non-mechanism CPU/cache/Ruby/memory controls match the
 reviewed `sparespec-stt` reference, including RC (`needsTSO=false`), the O3
 width/queue/register/port values, disabled Ruby cache resource stalls, and
-one-cycle sequencer hit latency.
+one-cycle sequencer hit latency. All L1/L2 size and associativity selectors and
+all LLC bank/latency/issue selectors must be supplied explicitly; none is
+accepted by omission.
 
 The runner also binds the source commit, binary and manifest hashes, workload
 row, checkpoint selector, exact inner command, and thread environment. It
-writes `execution_identity.json` and `canonical_workload_row.json` before
-launch. A successful run is still only a candidate: the immutable artifact
-bundle must pass the separate `nighthawk-baseline` v2 parity gate, and the
-Two-Level SDO semantic gaps documented in `docs/sdo_porting_gap.md` remain.
+rejects relative, symlink-resolved, or lexically non-canonical identity paths
+before launch. It writes `execution_identity.json` and
+`canonical_workload_row.json` before launch. A successful run is still only a
+candidate: the immutable artifact bundle must pass the separate
+`nighthawk-baseline` v2 parity gate. In particular, the nested branch-predictor
+representation still needs the fail-closed evidence adapter proposed in
+`docs/hpca27_branch_predictor_evidence_adapter.md`, and the Two-Level SDO
+semantic gaps documented in `docs/sdo_porting_gap.md` remain.

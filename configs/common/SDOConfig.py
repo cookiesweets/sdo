@@ -29,6 +29,33 @@ HPCA27_CPU_PARITY = {
 }
 
 
+HPCA27_BRANCH_PREDICTOR_PARITY = {
+    "BTBEntries": 4096,
+    "BTBTagSize": 16,
+    "RASSize": 16,
+    "instShiftAmt": 2,
+    "localPredictorSize": 2048,
+    "localCtrBits": 2,
+    "localHistoryTableSize": 2048,
+    "globalPredictorSize": 8192,
+    "globalCtrBits": 2,
+    "choicePredictorSize": 8192,
+    "choiceCtrBits": 2,
+}
+
+
+HPCA27_INDIRECT_PREDICTOR_PARITY = {
+    "indirectHashGHR": True,
+    "indirectHashTargets": True,
+    "indirectSets": 256,
+    "indirectWays": 2,
+    "indirectTagSize": 16,
+    "indirectPathLength": 3,
+    "indirectGHRBits": 13,
+    "instShiftAmt": 2,
+}
+
+
 HPCA27_OPTION_PARITY = {
     "scheme": "SDO",
     "mem_model": "RC",
@@ -39,6 +66,12 @@ HPCA27_OPTION_PARITY = {
     "moreTransTypes": 0,
     "ruby_enable_resource_stall": 0,
     "ruby_sequencer_hit_latency": 1,
+    "llc_data_array_banks": 1,
+    "llc_tag_array_banks": 1,
+    "llc_data_access_latency": 1,
+    "llc_tag_access_latency": 1,
+    "llc_data_issue_interval": 0,
+    "llc_tag_issue_interval": 0,
     "ports": 4,
     "num_cpus": 1,
     "num_l2caches": 1,
@@ -56,6 +89,8 @@ HPCA27_OPTION_PARITY = {
     "topology": "Mesh_XY",
     "ruby": True,
     "cpu_type": "DerivO3CPU",
+    "bp_type": None,
+    "indirect_bp_type": "SimpleIndirectPredictor",
     "sys_clock": "1GHz",
     "cpu_clock": "2GHz",
     "ruby_clock": "2GHz",
@@ -107,3 +142,32 @@ def configure_hpca27_parity_cpu(cpu_list, options):
     for cpu in cpu_list:
         for name, value in HPCA27_CPU_PARITY.items():
             setattr(cpu, name, value)
+    configure_hpca27_parity_branch_predictor(cpu_list, options)
+
+
+def configure_hpca27_parity_branch_predictor(cpu_list, options):
+    """Bind the target's nested predictor schema to reviewed reference values."""
+
+    if not hpca27_parity_enabled(options):
+        return
+    validate_hpca27_parity_options(options)
+    for cpu in cpu_list:
+        branch_pred = getattr(cpu, "branchPred", None)
+        if branch_pred is None or \
+                getattr(branch_pred, "type", None) != "TournamentBP":
+            raise ValueError(
+                "HPCA27 parity requires a TournamentBP branch predictor"
+            )
+        for name, value in HPCA27_BRANCH_PREDICTOR_PARITY.items():
+            setattr(branch_pred, name, value)
+
+        indirect_pred = getattr(branch_pred, "indirectBranchPred", None)
+        if indirect_pred is None or \
+                getattr(indirect_pred, "type", None) != \
+                "SimpleIndirectPredictor":
+            raise ValueError(
+                "HPCA27 parity requires a nested "
+                "SimpleIndirectPredictor"
+            )
+        for name, value in HPCA27_INDIRECT_PREDICTOR_PARITY.items():
+            setattr(indirect_pred, name, value)

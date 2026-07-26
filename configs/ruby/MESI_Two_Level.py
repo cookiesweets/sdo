@@ -41,7 +41,18 @@ class L1Cache(RubyCache): pass
 class L2Cache(RubyCache): pass
 
 def define_options(parser):
-    return
+    parser.add_option("--llc-data-array-banks", type="int", default=1,
+                      help="Number of L2/LLC data array banks")
+    parser.add_option("--llc-tag-array-banks", type="int", default=1,
+                      help="Number of L2/LLC tag array banks")
+    parser.add_option("--llc-data-access-latency", type="int", default=1,
+                      help="L2/LLC data array access latency in cycles")
+    parser.add_option("--llc-tag-access-latency", type="int", default=1,
+                      help="L2/LLC tag array access latency in cycles")
+    parser.add_option("--llc-data-issue-interval", type="int", default=0,
+                      help="L2/LLC data issue interval; 0 uses access latency")
+    parser.add_option("--llc-tag-issue-interval", type="int", default=0,
+                      help="L2/LLC tag issue interval; 0 uses access latency")
 
 def create_system(options, full_system, system, dma_ports, ruby_system):
 
@@ -66,6 +77,7 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
     l2_bits = int(math.log(options.num_l2caches, 2))
     block_size_bits = int(math.log(options.cacheline_size, 2))
     resource_stalls = bool(options.ruby_enable_resource_stall)
+    stt = bool(options.STT)
 
     for i in xrange(options.num_cpus):
         #
@@ -75,11 +87,25 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
                             assoc = options.l1i_assoc,
                             start_index_bit = block_size_bits,
                             is_icache = True,
+                            dataArrayBanks = 1,
+                            tagArrayBanks = 1,
+                            dataAccessLatency = 1,
+                            tagAccessLatency = 1,
+                            dataIssueInterval = 0,
+                            tagIssueInterval = 0,
+                            is_stt = stt,
                             resourceStalls = resource_stalls)
         l1d_cache = L1Cache(size = options.l1d_size,
                             assoc = options.l1d_assoc,
                             start_index_bit = block_size_bits,
                             is_icache = False,
+                            dataArrayBanks = 1,
+                            tagArrayBanks = 1,
+                            dataAccessLatency = 1,
+                            tagAccessLatency = 1,
+                            dataIssueInterval = 0,
+                            tagIssueInterval = 0,
+                            is_stt = stt,
                             resourceStalls = resource_stalls)
 
         prefetcher = RubyPrefetcher.Prefetcher()
@@ -148,6 +174,19 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
         l2_cache = L2Cache(size = options.l2_size,
                            assoc = options.l2_assoc,
                            start_index_bit = l2_index_start,
+                           dataArrayBanks =
+                               options.llc_data_array_banks,
+                           tagArrayBanks =
+                               options.llc_tag_array_banks,
+                           dataAccessLatency =
+                               options.llc_data_access_latency,
+                           tagAccessLatency =
+                               options.llc_tag_access_latency,
+                           dataIssueInterval =
+                               options.llc_data_issue_interval,
+                           tagIssueInterval =
+                               options.llc_tag_issue_interval,
+                           is_stt = False,
                            resourceStalls = resource_stalls)
 
         l2_cntrl = L2Cache_Controller(version = i,

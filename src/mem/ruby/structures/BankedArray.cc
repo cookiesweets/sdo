@@ -35,11 +35,15 @@
 #include "mem/ruby/system/RubySystem.hh"
 
 BankedArray::BankedArray(unsigned int banks, Cycles accessLatency,
+                         Cycles issueInterval,
                          unsigned int startIndexBit, RubySystem *rs)
     : m_ruby_system(rs)
 {
     this->banks = banks;
     this->accessLatency = accessLatency;
+    this->rawIssueInterval = issueInterval;
+    this->issueInterval =
+        issueInterval == 0 ? accessLatency : issueInterval;
     this->startIndexBit = startIndexBit;
 
     if (banks != 0) {
@@ -52,7 +56,7 @@ BankedArray::BankedArray(unsigned int banks, Cycles accessLatency,
 bool
 BankedArray::tryAccess(int64_t idx)
 {
-    if (accessLatency == 0)
+    if (issueInterval == 0)
         return true;
 
     unsigned int bank = mapIndexToBank(idx);
@@ -72,7 +76,7 @@ BankedArray::tryAccessBankObliv(int64_t idx)
     // must enable MLDOM to use this feature
     assert(RubySystem::getMLDOMEnabled());
 
-    if (accessLatency == 0)
+    if (issueInterval == 0)
         return true;
 
     for (unsigned int bank = 0; bank < banks; bank++) {
@@ -87,7 +91,7 @@ BankedArray::tryAccessBankObliv(int64_t idx)
 void
 BankedArray::reserve(int64_t idx)
 {
-    if (accessLatency == 0)
+    if (issueInterval == 0)
         return;
 
     unsigned int bank = mapIndexToBank(idx);
@@ -106,7 +110,7 @@ BankedArray::reserve(int64_t idx)
     busyBanks[bank].idx = idx;
     busyBanks[bank].startAccess = curTick();
     busyBanks[bank].endAccess = curTick() +
-        (accessLatency-1) * m_ruby_system->clockPeriod();
+        (issueInterval-1) * m_ruby_system->clockPeriod();
 }
 
 // Jiyong, MLDOM: spec loads will use this instead of reserve()
@@ -116,7 +120,7 @@ BankedArray::reserveBankObliv(int64_t idx)
     // must enable MLDOM to use this feature
     assert(RubySystem::getMLDOMEnabled());
 
-    if (accessLatency == 0)
+    if (issueInterval == 0)
         return;
 
     for (unsigned int bank = 0; bank < bank; bank++) {
@@ -133,7 +137,7 @@ BankedArray::reserveBankObliv(int64_t idx)
         busyBanks[bank].idx = idx;
         busyBanks[bank].startAccess = curTick();
         busyBanks[bank].endAccess = curTick() +
-            (accessLatency-1) * m_ruby_system->clockPeriod();
+            (issueInterval-1) * m_ruby_system->clockPeriod();
     }
 }
 

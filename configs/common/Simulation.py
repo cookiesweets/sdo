@@ -502,6 +502,9 @@ def run(options, root, testsys, cpu_class):
                         options.indirect_bp_type)
                 switch_cpus[i].branchPred.indirectBranchPred = \
                         IndirectBPClass()
+            CpuConfig.configure_hpca27_parity_branch_predictor(
+                [switch_cpus[i]], options
+            )
 
         # If elastic tracing is enabled attach the elastic trace probe
         # to the switch CPUs

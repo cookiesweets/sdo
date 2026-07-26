@@ -43,6 +43,8 @@ class BankedArray
   private:
     unsigned int banks;
     Cycles accessLatency;
+    Cycles rawIssueInterval;
+    Cycles issueInterval;
     unsigned int bankBits;
     unsigned int startIndexBit;
     RubySystem *m_ruby_system;
@@ -64,6 +66,7 @@ class BankedArray
 
   public:
     BankedArray(unsigned int banks, Cycles accessLatency,
+                Cycles issueInterval,
                 unsigned int startIndexBit, RubySystem *rs);
 
     // Note: We try the access based on the cache index, not the address
@@ -79,6 +82,8 @@ class BankedArray
     void reserveBankObliv(int64_t idx);
 
     Cycles getLatency() const { return accessLatency; }
+    Cycles getRawIssueInterval() const { return rawIssueInterval; }
+    Cycles getIssueInterval() const { return issueInterval; }
 };
 
 #endif

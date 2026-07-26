@@ -111,8 +111,8 @@ class DRAMCtrl(AbstractMemory):
     # frontend part and a backend part, with reads and writes serviced
     # by the queues only seeing the frontend contribution, and reads
     # serviced by the memory seeing the sum of the two
-    static_frontend_latency = Param.Latency("50ns", "Static frontend latency")
-    static_backend_latency = Param.Latency("50ns", "Static backend latency")
+    static_frontend_latency = Param.Latency("10ns", "Static frontend latency")
+    static_backend_latency = Param.Latency("10ns", "Static backend latency")
 
     # the physical organisation of the DRAM
     device_bus_width = Param.Unsigned("data bus width in bits for each DRAM "\

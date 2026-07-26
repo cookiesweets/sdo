@@ -97,6 +97,14 @@ class CacheMemory : public SimObject
 
     Cycles getTagLatency() const { return tagArray.getLatency(); }
     Cycles getDataLatency() const { return dataArray.getLatency(); }
+    Cycles getTagIssueInterval() const
+    {
+        return tagArray.getIssueInterval();
+    }
+    Cycles getDataIssueInterval() const
+    {
+        return dataArray.getIssueInterval();
+    }
 
     bool isBlockInvalid(int64_t cache_set, int64_t loc);
     bool isBlockNotBusy(int64_t cache_set, int64_t loc);

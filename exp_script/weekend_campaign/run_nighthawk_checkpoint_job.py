@@ -45,6 +45,30 @@ def file_sha256(path):
     return digest.hexdigest()
 
 
+def canonical_path(path, label, expected_kind=None):
+    """Require an absolute, lexical and physical non-symlink path."""
+
+    if not os.path.isabs(path):
+        raise ValueError(label + " must be absolute: " + path)
+    absolute = os.path.abspath(path)
+    if path != absolute:
+        raise ValueError(
+            label + " must use its canonical lexical path: " + path
+        )
+    if os.path.islink(path) or os.path.realpath(path) != absolute:
+        raise ValueError(
+            label + " must use a canonical non-symlink path: " + path
+        )
+    if expected_kind == "file" and not os.path.isfile(path):
+        raise ValueError("missing " + label + ": " + path)
+    if expected_kind == "directory" and not os.path.isdir(path):
+        raise ValueError("missing " + label + ": " + path)
+    if expected_kind == "optional-directory" and os.path.exists(path) and \
+            not os.path.isdir(path):
+        raise ValueError(label + " is not a directory: " + path)
+    return absolute
+
+
 def stable_sha256(value):
     encoded = json.dumps(
         value, sort_keys=True, separators=(",", ":")
@@ -106,24 +130,28 @@ def parse_args(argv=None):
         "--pending-policy", choices=("not_applicable",), required=True
     )
     parser.add_argument("--smshr", type=int, required=True)
-    parser.add_argument("--l1d-size", default="64kB")
-    parser.add_argument("--l1i-size", default="32kB")
-    parser.add_argument("--l2-size", default="2MB")
-    parser.add_argument("--l1d-assoc", type=int, default=8)
-    parser.add_argument("--l1i-assoc", type=int, default=4)
-    parser.add_argument("--l2-assoc", type=int, default=16)
+    parser.add_argument("--l1d-size", required=True)
+    parser.add_argument("--l1i-size", required=True)
+    parser.add_argument("--l2-size", required=True)
+    parser.add_argument("--l1d-assoc", type=int, required=True)
+    parser.add_argument("--l1i-assoc", type=int, required=True)
+    parser.add_argument("--l2-assoc", type=int, required=True)
     parser.add_argument(
-        "--llc-bank-contention", type=int, choices=(0, 1), default=0
+        "--llc-bank-contention", type=int, choices=(0, 1), required=True
     )
     parser.add_argument(
-        "--llc-fake-getspec", type=int, choices=(0, 1), default=0
+        "--llc-fake-getspec", type=int, choices=(0, 1), required=True
     )
-    parser.add_argument("--llc-data-banks", type=int, default=1)
-    parser.add_argument("--llc-tag-banks", type=int, default=1)
-    parser.add_argument("--llc-data-latency", type=int, default=1)
-    parser.add_argument("--llc-tag-latency", type=int, default=1)
-    parser.add_argument("--llc-data-issue-interval", type=int, default=0)
-    parser.add_argument("--llc-tag-issue-interval", type=int, default=0)
+    parser.add_argument("--llc-data-banks", type=int, required=True)
+    parser.add_argument("--llc-tag-banks", type=int, required=True)
+    parser.add_argument("--llc-data-latency", type=int, required=True)
+    parser.add_argument("--llc-tag-latency", type=int, required=True)
+    parser.add_argument(
+        "--llc-data-issue-interval", type=int, required=True
+    )
+    parser.add_argument(
+        "--llc-tag-issue-interval", type=int, required=True
+    )
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--max-insts", type=int, required=True)
     parser.add_argument("--expected-source-sha", required=True)
@@ -252,6 +280,14 @@ def build_command(args, binary, config, output_dir, row):
         "--moreTransTypes=0",
         "--ruby_enable_resource_stall=0",
         "--ruby-sequencer-hit-latency=1",
+        "--llc-data-array-banks=" + str(args.llc_data_banks),
+        "--llc-tag-array-banks=" + str(args.llc_tag_banks),
+        "--llc-data-access-latency=" + str(args.llc_data_latency),
+        "--llc-tag-access-latency=" + str(args.llc_tag_latency),
+        "--llc-data-issue-interval="
+        + str(args.llc_data_issue_interval),
+        "--llc-tag-issue-interval="
+        + str(args.llc_tag_issue_interval),
         "--pred_type=tournament_2way",
         "--subpred1_type=greedy",
         "--subpred2_type=loop",
@@ -267,16 +303,16 @@ def build_command(args, binary, config, output_dir, row):
 
 def main(argv=None):
     args = parse_args(argv)
-    source_root = os.path.abspath(args.source_root)
-    binary = os.path.abspath(args.binary)
-    manifest_path = os.path.abspath(args.manifest)
-    output_dir = os.path.abspath(args.output_dir)
-
-    if not os.path.isdir(source_root):
-        raise ValueError("missing source directory: " + source_root)
-    for path in (binary, manifest_path):
-        if not os.path.isfile(path):
-            raise ValueError("missing identity input: " + path)
+    source_root = canonical_path(
+        args.source_root, "source directory", "directory"
+    )
+    binary = canonical_path(args.binary, "identity binary", "file")
+    manifest_path = canonical_path(
+        args.manifest, "canonical workload manifest", "file"
+    )
+    output_dir = canonical_path(
+        args.output_dir, "output directory", "optional-directory"
+    )
 
     source_sha = validate_source_identity(
         source_root, args.expected_source_sha
@@ -306,9 +342,14 @@ def main(argv=None):
         "spec{}_config.py".format(row["suite_code"]),
     )
     benchmark_config = os.path.join(source_root, row["config_source"])
-    for path in (config, benchmark_config, row["working_directory"]):
-        if not os.path.exists(path):
-            raise ValueError("missing execution input: " + path)
+    canonical_path(config, "SPEC selector config", "file")
+    canonical_path(benchmark_config, "benchmark config", "file")
+    canonical_path(
+        row["working_directory"], "workload directory", "directory"
+    )
+    canonical_path(
+        row["checkpoint_directory"], "checkpoint directory", "directory"
+    )
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
 
@@ -359,6 +400,14 @@ def main(argv=None):
         "l1d_assoc": args.l1d_assoc,
         "l1i_assoc": args.l1i_assoc,
         "l2_assoc": args.l2_assoc,
+        "llc_bank_contention": args.llc_bank_contention,
+        "llc_fake_getspec": args.llc_fake_getspec,
+        "llc_data_banks": args.llc_data_banks,
+        "llc_tag_banks": args.llc_tag_banks,
+        "llc_data_latency": args.llc_data_latency,
+        "llc_tag_latency": args.llc_tag_latency,
+        "llc_data_issue_interval": args.llc_data_issue_interval,
+        "llc_tag_issue_interval": args.llc_tag_issue_interval,
         "source_root": source_root,
         "source_sha": source_sha,
         "stt": 1,
