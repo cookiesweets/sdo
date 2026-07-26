@@ -53,5 +53,9 @@ class RubyCache(SimObject):
     tagIssueInterval = Param.Cycles(
         0, "tag array issue interval; 0 preserves access latency")
     resourceStalls = Param.Bool(True, "stall if there is a resource failure")
+    # These compatibility fields are false for SDO, but retaining the
+    # reference representation keeps closed-world config parity auditable.
+    is_l1ispare = Param.Bool(False, "Whether L1Icache uses a spare way")
+    is_l1dspare = Param.Bool(False, "Whether L1Dcache uses a spare way")
     is_stt = Param.Bool(False, "STT visibility selected for this cache")
     ruby_system = Param.RubySystem(Parent.any, "")

@@ -38,14 +38,13 @@ class Prefetcher(SimObject):
 
     num_streams = Param.UInt32(4,
         "Number of prefetch streams to be allocated")
-    # pf_per_stream = Param.UInt32(8, "Number of prefetches per stream") # not used
+    pf_per_stream = Param.UInt32(1, "Number of prefetches per stream")
     unit_filter  = Param.UInt32(8,
         "Number of entries in the unit filter array")
     nonunit_filter = Param.UInt32(8,
         "Number of entries in the non-unit filter array")
-    train_misses = Param.UInt32(1, "")
-    num_startup_pfs = Param.UInt32(8, "")
-    num_extra_pfs = Param.UInt32(0, "")
-    cross_page = Param.Bool(True, """True if prefetched address can be on a
+    train_misses = Param.UInt32(4, "")
+    num_startup_pfs = Param.UInt32(1, "")
+    cross_page = Param.Bool(False, """True if prefetched address can be on a
             page different from the observed address""")
     sys = Param.System(Parent.any, "System this prefetcher belongs to")

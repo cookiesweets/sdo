@@ -43,93 +43,73 @@ from m5.defines import buildEnv
 from m5.params import *
 from FuncUnit import *
 
-# Jiyong: This functional unit configuration matches Intel Haswell
-
 class IntALU(FUDesc):
     opList = [ OpDesc(opClass='IntAlu') ]
-    count = 4   # 6 is the best
+    count = 6
 
-# class IntMultDiv(FUDesc):
-    # opList = [ OpDesc(opClass='IntMult', opLat=3),
-               # OpDesc(opClass='IntDiv', opLat=20, pipelined=False) ]
+class IntMultDiv(FUDesc):
+    opList = [ OpDesc(opClass='IntMult', opLat=3),
+               OpDesc(opClass='IntDiv', opLat=20, pipelined=False) ]
 
-    # # DIV and IDIV instructions in x86 are implemented using a loop which
-    # # issues division microops.  The latency of these microops should really be
-    # # one (or a small number) cycle each since each of these computes one bit
-    # # of the quotient.
-    # if buildEnv['TARGET_ISA'] in ('x86'):
-        # opList[1].opLat=1
-
-    # count=2
-
-class IntMult(FUDesc):
-    opList = [ OpDesc(opClass='IntMult', opLat=3) ]
-    count = 1
-
-class IntDiv(FUDesc):
-    opList = [ OpDesc(opClass='IntDiv', opLat=20, pipelined=False) ]
-
+    # x86 DIV/IDIV is a loop of division micro-ops.  Match the Nighthawk
+    # reference FU contract rather than the legacy SDO Haswell profile.
     if buildEnv['TARGET_ISA'] in ('x86'):
-        opList[0].opLat=1
+        opList[1].opLat=1
 
-    count = 1
+    count=2
 
 class FP_ALU(FUDesc):
-    opList = [ OpDesc(opClass='FloatAdd', opLat=3),
-               OpDesc(opClass='FloatCmp', opLat=3),
-               OpDesc(opClass='FloatCvt', opLat=3) ]
-    count = 1
+    opList = [ OpDesc(opClass='FloatAdd', opLat=2),
+               OpDesc(opClass='FloatCmp', opLat=2),
+               OpDesc(opClass='FloatCvt', opLat=2) ]
+    count = 4
 
-class FP_Mult(FUDesc):
-    opList = [ OpDesc(opClass='FloatMult', opLat=5),
+class FP_MultDiv(FUDesc):
+    opList = [ OpDesc(opClass='FloatMult', opLat=4),
                OpDesc(opClass='FloatMultAcc', opLat=5),
-               OpDesc(opClass='FloatMisc', opLat=3) ]
-    count = 1
-
-class FP_Div(FUDesc):
-    opList = [ OpDesc(opClass='FloatDiv', opLat=15, pipelined=False),
-               OpDesc(opClass='FloatSqrt', opLat=15, pipelined=False) ]
-    count = 1
+               OpDesc(opClass='FloatMisc', opLat=3),
+               OpDesc(opClass='FloatDiv', opLat=12, pipelined=False),
+               OpDesc(opClass='FloatSqrt', opLat=24, pipelined=False) ]
+    count = 2
 
 class SIMD_Unit(FUDesc):
-    opList = [ OpDesc(opClass='SimdAdd', opLat=1),
-               OpDesc(opClass='SimdAddAcc', opLat=1),
-               OpDesc(opClass='SimdAlu', opLat=1),
-               OpDesc(opClass='SimdCmp', opLat=1),
-               OpDesc(opClass='SimdCvt', opLat=3),
-               OpDesc(opClass='SimdMisc', opLat=3),
-               OpDesc(opClass='SimdMult', opLat=5),
-               OpDesc(opClass='SimdMultAcc', opLat=5),
-               OpDesc(opClass='SimdShift', opLat=2),
-               OpDesc(opClass='SimdShiftAcc', opLat=2),
-               OpDesc(opClass='SimdSqrt', opLat=5),
-               OpDesc(opClass='SimdFloatAdd', opLat=3),
-               OpDesc(opClass='SimdFloatAlu', opLat=3),
-               OpDesc(opClass='SimdFloatCmp', opLat=3),
-               OpDesc(opClass='SimdFloatCvt', opLat=4),
-               OpDesc(opClass='SimdFloatDiv', opLat=15, pipelined=False),
-               OpDesc(opClass='SimdFloatMisc', opLat=3),
-               OpDesc(opClass='SimdFloatMult', opLat=3),
-               OpDesc(opClass='SimdFloatMultAcc', opLat=5),
-               OpDesc(opClass='SimdFloatSqrt', opLat=15, pipelined=False) ]
+    opList = [ OpDesc(opClass='SimdAdd'),
+               OpDesc(opClass='SimdAddAcc'),
+               OpDesc(opClass='SimdAlu'),
+               OpDesc(opClass='SimdCmp'),
+               OpDesc(opClass='SimdCvt'),
+               OpDesc(opClass='SimdMisc'),
+               OpDesc(opClass='SimdMult'),
+               OpDesc(opClass='SimdMultAcc'),
+               OpDesc(opClass='SimdShift'),
+               OpDesc(opClass='SimdShiftAcc'),
+               OpDesc(opClass='SimdSqrt'),
+               OpDesc(opClass='SimdFloatAdd'),
+               OpDesc(opClass='SimdFloatAlu'),
+               OpDesc(opClass='SimdFloatCmp'),
+               OpDesc(opClass='SimdFloatCvt'),
+               OpDesc(opClass='SimdFloatDiv'),
+               OpDesc(opClass='SimdFloatMisc'),
+               OpDesc(opClass='SimdFloatMult'),
+               OpDesc(opClass='SimdFloatMultAcc'),
+               OpDesc(opClass='SimdFloatSqrt') ]
     count = 4
 
 class ReadPort(FUDesc):
     opList = [ OpDesc(opClass='MemRead'),
                OpDesc(opClass='FloatMemRead') ]
-    count = 2
+    count = 0
 
 class WritePort(FUDesc):
     opList = [ OpDesc(opClass='MemWrite'),
                OpDesc(opClass='FloatMemWrite') ]
-    count = 1
+    count = 0
 
 class RdWrPort(FUDesc):
     opList = [ OpDesc(opClass='MemRead'), OpDesc(opClass='MemWrite'),
                OpDesc(opClass='FloatMemRead'), OpDesc(opClass='FloatMemWrite')]
-    count = 0
+    count = 4
 
 class IprPort(FUDesc):
     opList = [ OpDesc(opClass='IprAccess', opLat = 3, pipelined = False) ]
     count = 1
-

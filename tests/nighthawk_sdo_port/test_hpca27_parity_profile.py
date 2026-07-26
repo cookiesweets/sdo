@@ -192,6 +192,55 @@ class CpuParityProfileTest(unittest.TestCase):
 
 
 class RubyParityProfileTest(unittest.TestCase):
+    def test_reference_functional_unit_pool_is_explicit(self):
+        pool = " ".join(read_source("src/cpu/o3/FUPool.py").split())
+        self.assertIn(
+            "FUList = [ IntALU(), IntMultDiv(), FP_ALU(), "
+            "FP_MultDiv(), ReadPort(), SIMD_Unit(), WritePort(), "
+            "RdWrPort(), IprPort() ]",
+            pool,
+        )
+
+        units = " ".join(
+            read_source("src/cpu/o3/FuncUnitConfig.py").split()
+        )
+        for contract in (
+            "class IntALU(FUDesc): opList = "
+            "[ OpDesc(opClass='IntAlu') ] count = 6",
+            "class IntMultDiv(FUDesc):",
+            "class FP_MultDiv(FUDesc):",
+            "class ReadPort(FUDesc): opList =",
+            "class WritePort(FUDesc): opList =",
+            "class RdWrPort(FUDesc): opList =",
+        ):
+            self.assertIn(contract, units)
+        self.assertNotIn("class IntMult(FUDesc):", units)
+        self.assertNotIn("class IntDiv(FUDesc):", units)
+        self.assertNotIn("class FP_Mult(FUDesc):", units)
+        self.assertNotIn("class FP_Div(FUDesc):", units)
+
+    def test_reference_ruby_prefetcher_defaults_are_explicit(self):
+        source = " ".join(
+            read_source(
+                "src/mem/ruby/structures/RubyPrefetcher.py"
+            ).split()
+        )
+        for contract in (
+            'pf_per_stream = Param.UInt32(1,',
+            'train_misses = Param.UInt32(4,',
+            'num_startup_pfs = Param.UInt32(1,',
+            'cross_page = Param.Bool(False,',
+        ):
+            self.assertIn(contract, source)
+        self.assertNotIn("num_extra_pfs = Param.UInt32(", source)
+
+    def test_reference_spare_field_representation_is_retained(self):
+        source = " ".join(
+            read_source("src/mem/ruby/structures/RubyCache.py").split()
+        )
+        self.assertIn("is_l1ispare = Param.Bool(False,", source)
+        self.assertIn("is_l1dspare = Param.Bool(False,", source)
+
     def test_two_level_constructors_bind_stalls_and_hit_latency(self):
         source = " ".join(
             read_source("configs/ruby/MESI_Two_Level.py").split()
