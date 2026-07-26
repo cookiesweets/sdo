@@ -380,8 +380,8 @@ def addCommonOptions(parser):
             help="fail closed unless non-mechanism controls match the "
                  "reviewed HPCA27 sparespec-stt performance profile")
     parser.add_option("--hpca27-evidence-class",
-            default="full-performance", action="store", type="choice",
-            choices=["full-performance",
+            default="final-performance", action="store", type="choice",
+            choices=["final-performance",
                      "sanity-slice-not-final-performance"],
             help="bind the HPCA27 instruction budget to final-performance "
                  "or an explicitly non-final sanity slice")

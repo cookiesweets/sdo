@@ -24,7 +24,7 @@ MODE_OPTIONS = {
 }
 
 HPCA27_MAX_INSTS = 500000000
-HPCA27_FULL_EVIDENCE_CLASS = "full-performance"
+HPCA27_FINAL_EVIDENCE_CLASS = "final-performance"
 HPCA27_SANITY_EVIDENCE_CLASS = "sanity-slice-not-final-performance"
 HPCA27_SANITY_MAX_INSTS = (10000000, 25000000)
 
@@ -160,7 +160,7 @@ def parse_args(argv=None):
     parser.add_argument(
         "--evidence-class",
         choices=(
-            HPCA27_FULL_EVIDENCE_CLASS,
+            HPCA27_FINAL_EVIDENCE_CLASS,
             HPCA27_SANITY_EVIDENCE_CLASS,
         ),
         required=True,
@@ -203,7 +203,7 @@ def validate_fixed_controls(args, row):
             mismatches.append(
                 "{}={!r} (expected {!r})".format(name, actual, wanted)
             )
-    if args.evidence_class == HPCA27_FULL_EVIDENCE_CLASS:
+    if args.evidence_class == HPCA27_FINAL_EVIDENCE_CLASS:
         allowed_budgets = (HPCA27_MAX_INSTS,)
     elif args.evidence_class == HPCA27_SANITY_EVIDENCE_CLASS:
         allowed_budgets = HPCA27_SANITY_MAX_INSTS
@@ -216,12 +216,18 @@ def validate_fixed_controls(args, row):
             )
         )
     row_budget = int(row["post_restore_instruction_budget"])
-    if row_budget != args.max_insts:
+    if row_budget != HPCA27_MAX_INSTS:
         mismatches.append(
             "post_restore_instruction_budget={!r} "
-            "(expected selected max_insts {!r})".format(
-                row_budget, args.max_insts
+            "(expected canonical final-performance budget {!r})".format(
+                row_budget, HPCA27_MAX_INSTS
             )
+        )
+    if args.evidence_class == HPCA27_SANITY_EVIDENCE_CLASS and \
+            args.max_insts >= row_budget:
+        mismatches.append(
+            "sanity max_insts={!r} must be smaller than canonical "
+            "budget {!r}".format(args.max_insts, row_budget)
         )
     if mismatches:
         raise ValueError(

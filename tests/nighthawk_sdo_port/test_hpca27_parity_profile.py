@@ -24,7 +24,7 @@ from common.SDOConfig import configure_hpca27_parity_branch_predictor
 from common.SDOConfig import HPCA27_BRANCH_PREDICTOR_PARITY
 from common.SDOConfig import HPCA27_CPU_PARITY
 from common.SDOConfig import HPCA27_INDIRECT_PREDICTOR_PARITY
-from common.SDOConfig import HPCA27_FULL_EVIDENCE_CLASS
+from common.SDOConfig import HPCA27_FINAL_EVIDENCE_CLASS
 from common.SDOConfig import HPCA27_OPTION_PARITY
 from common.SDOConfig import HPCA27_SANITY_EVIDENCE_CLASS
 from common.SDOConfig import validate_hpca27_parity_options
@@ -63,7 +63,7 @@ def parity_options():
     for name, value in HPCA27_OPTION_PARITY.items():
         setattr(options, name, value)
     options.hpca27_performance_parity = True
-    options.hpca27_evidence_class = HPCA27_FULL_EVIDENCE_CLASS
+    options.hpca27_evidence_class = HPCA27_FINAL_EVIDENCE_CLASS
     return options
 
 
@@ -78,7 +78,7 @@ def parity_cpu():
 
 def runner_argv(
         max_insts="500000000",
-        evidence_class=HPCA27_FULL_EVIDENCE_CLASS):
+        evidence_class=HPCA27_FINAL_EVIDENCE_CLASS):
     return [
         "--source-root", "/source",
         "--binary", "/binary",
@@ -114,7 +114,7 @@ def runner_argv(
 
 def runner_args(
         max_insts="500000000",
-        evidence_class=HPCA27_FULL_EVIDENCE_CLASS):
+        evidence_class=HPCA27_FINAL_EVIDENCE_CLASS):
     return RUNNER.parse_args(runner_argv(max_insts, evidence_class))
 
 
@@ -310,7 +310,7 @@ class CanonicalRunnerContractTest(unittest.TestCase):
             "--scheme=SDO",
             "--mem_model=RC",
             "--maxinsts=500000000",
-            "--hpca27-evidence-class=full-performance",
+            "--hpca27-evidence-class=final-performance",
             "--threat_model=Futuristic",
             "--STT=1",
             "--impChannel=1",
@@ -427,7 +427,7 @@ class CanonicalRunnerContractTest(unittest.TestCase):
                 "display_name": "bzip2",
                 "checkpoint_directory": "/checkpoint",
                 "checkpoint_restore": 10000000000,
-                "post_restore_instruction_budget": budget,
+                "post_restore_instruction_budget": 500000000,
             }
             RUNNER.validate_fixed_controls(args, row)
             command = RUNNER.build_command(
@@ -445,7 +445,7 @@ class CanonicalRunnerContractTest(unittest.TestCase):
                 max_insts=str(budget),
                 evidence_class=HPCA27_SANITY_EVIDENCE_CLASS,
             )
-            row = {"post_restore_instruction_budget": budget}
+            row = {"post_restore_instruction_budget": 500000000}
             with self.assertRaises(ValueError):
                 RUNNER.validate_fixed_controls(args, row)
 

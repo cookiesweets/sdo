@@ -100,7 +100,7 @@ HPCA27_OPTION_PARITY = {
     "maxinsts": 500000000,
 }
 
-HPCA27_FULL_EVIDENCE_CLASS = "full-performance"
+HPCA27_FINAL_EVIDENCE_CLASS = "final-performance"
 HPCA27_SANITY_EVIDENCE_CLASS = "sanity-slice-not-final-performance"
 HPCA27_SANITY_MAX_INSTS = (10000000, 25000000)
 
@@ -134,10 +134,10 @@ def validate_hpca27_parity_options(options):
             )
 
     evidence_class = getattr(
-        options, "hpca27_evidence_class", HPCA27_FULL_EVIDENCE_CLASS
+        options, "hpca27_evidence_class", HPCA27_FINAL_EVIDENCE_CLASS
     )
     maxinsts = getattr(options, "maxinsts", None)
-    if evidence_class == HPCA27_FULL_EVIDENCE_CLASS:
+    if evidence_class == HPCA27_FINAL_EVIDENCE_CLASS:
         if maxinsts != HPCA27_OPTION_PARITY["maxinsts"]:
             mismatches.append(
                 "maxinsts={!r} (expected {!r} for {!r})".format(
@@ -157,7 +157,7 @@ def validate_hpca27_parity_options(options):
         mismatches.append(
             "hpca27_evidence_class={!r} (expected {!r} or {!r})".format(
                 evidence_class,
-                HPCA27_FULL_EVIDENCE_CLASS,
+                HPCA27_FINAL_EVIDENCE_CLASS,
                 HPCA27_SANITY_EVIDENCE_CLASS,
             )
         )
