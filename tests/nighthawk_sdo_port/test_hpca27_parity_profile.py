@@ -7,7 +7,6 @@ Keep this file compatible with Python 2.7 and Python 3.5.
 
 from __future__ import print_function
 
-import io
 import os
 import shutil
 import sys
@@ -323,7 +322,8 @@ class CanonicalRunnerContractTest(unittest.TestCase):
             "--llc-tag-issue-interval",
         )
         original_stderr = sys.stderr
-        sys.stderr = io.StringIO()
+        captured_stderr = open(os.devnull, "w")
+        sys.stderr = captured_stderr
         try:
             for option in cache_options:
                 argv = runner_argv()
@@ -333,6 +333,7 @@ class CanonicalRunnerContractTest(unittest.TestCase):
                     RUNNER.parse_args(argv)
         finally:
             sys.stderr = original_stderr
+            captured_stderr.close()
 
     def test_runner_rejects_noncanonical_identity_paths(self):
         root = os.path.realpath(tempfile.mkdtemp(prefix="sdo-parity-"))
