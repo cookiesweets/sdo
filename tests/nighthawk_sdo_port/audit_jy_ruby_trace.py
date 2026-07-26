@@ -14,11 +14,12 @@ import sys
 
 CALLBACK_RE = re.compile(
     r"SPEC_LD_L1 commands callback readCallback_fromL([01]) "
-    r"\(sn=([0-9]+),")
+    r"\(sn=([0-9]+), idx=([0-9]+-[0-9]+),")
 
 
 def audit_trace(path):
     callback_counts = {}
+    instruction_transactions = {}
     failed_inserts = 0
     stuck_packets = 0
 
@@ -28,9 +29,13 @@ def audit_trace(path):
             if match:
                 level = match.group(1)
                 sequence_number = match.group(2)
+                fragment_index = match.group(3)
+                transaction = (sequence_number, fragment_index)
                 counts = callback_counts.setdefault(
-                    sequence_number, {"0": 0, "1": 0})
+                    transaction, {"0": 0, "1": 0})
                 counts[level] += 1
+                instruction_transactions.setdefault(
+                    sequence_number, set()).add(fragment_index)
 
             if ("fail to insert a request to Sequencer "
                     "SpecLDRequestTable" in line):
@@ -39,14 +44,18 @@ def audit_trace(path):
                 stuck_packets += 1
 
     totals = {
-        "unique_seqnums": len(callback_counts),
+        "unique_instruction_seqnums": len(instruction_transactions),
+        "unique_transactions": len(callback_counts),
+        "split_instruction_seqnums": sum(
+            1 for fragments in instruction_transactions.values()
+            if len(fragments) > 1),
         "l0_callbacks": 0,
         "l1_callbacks": 0,
-        "seqnums_with_duplicate_l0": 0,
-        "seqnums_with_duplicate_l1": 0,
-        "seqnums_missing_l0": 0,
-        "seqnums_missing_l1": 0,
-        "seqnums_not_exactly_one_each": 0,
+        "transactions_with_duplicate_l0": 0,
+        "transactions_with_duplicate_l1": 0,
+        "transactions_missing_l0": 0,
+        "transactions_missing_l1": 0,
+        "transactions_not_exactly_one_each": 0,
         "failed_insert_lines": failed_inserts,
         "stuck_packet_lines": stuck_packets,
     }
@@ -57,20 +66,20 @@ def audit_trace(path):
         totals["l0_callbacks"] += l0_count
         totals["l1_callbacks"] += l1_count
         if l0_count > 1:
-            totals["seqnums_with_duplicate_l0"] += 1
+            totals["transactions_with_duplicate_l0"] += 1
         if l1_count > 1:
-            totals["seqnums_with_duplicate_l1"] += 1
+            totals["transactions_with_duplicate_l1"] += 1
         if l0_count == 0:
-            totals["seqnums_missing_l0"] += 1
+            totals["transactions_missing_l0"] += 1
         if l1_count == 0:
-            totals["seqnums_missing_l1"] += 1
+            totals["transactions_missing_l1"] += 1
         if l0_count != 1 or l1_count != 1:
-            totals["seqnums_not_exactly_one_each"] += 1
+            totals["transactions_not_exactly_one_each"] += 1
 
     totals["final_status"] = (
         "PASS"
-        if totals["unique_seqnums"] > 0
-        and totals["seqnums_not_exactly_one_each"] == 0
+        if totals["unique_transactions"] > 0
+        and totals["transactions_not_exactly_one_each"] == 0
         and totals["stuck_packet_lines"] == 0
         else "FAIL"
     )
@@ -90,19 +99,21 @@ def main(argv=None):
         return 2
 
     output_order = [
-        "unique_seqnums",
+        "unique_instruction_seqnums",
+        "unique_transactions",
+        "split_instruction_seqnums",
         "l0_callbacks",
         "l1_callbacks",
-        "seqnums_with_duplicate_l0",
-        "seqnums_with_duplicate_l1",
-        "seqnums_missing_l0",
-        "seqnums_missing_l1",
-        "seqnums_not_exactly_one_each",
+        "transactions_with_duplicate_l0",
+        "transactions_with_duplicate_l1",
+        "transactions_missing_l0",
+        "transactions_missing_l1",
+        "transactions_not_exactly_one_each",
         "failed_insert_lines",
         "stuck_packet_lines",
         "final_status",
     ]
-    print("schema_version=1")
+    print("schema_version=2")
     print("trace_path={0}".format(arguments.trace))
     for key in output_order:
         print("{0}={1}".format(key, totals[key]))
